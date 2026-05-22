@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>成绩追踪 & 积分系统</title>
+<style>
+/* ===== 统一科幻配色 — 仅 青/红/绿/黄 四色 ===== */
+:root {
+  --bg-deep:       #050a18;
+  --bg-card:       rgba(10,18,40,0.88);
+  --bg-surface:    rgba(15,25,50,0.92);
+  --cyan:          #00e8ff;
+  --cyan-dim:      rgba(0,232,255,0.13);
+  --cyan-glow:     rgba(0,232,255,0.25);
+  --red:           #ff3860;
+  --red-dim:       rgba(255,56,96,0.13);
+  --green:         #22ffb3;
+  --green-dim:     rgba(34,255,179,0.13);
+  --yellow:        #fbbf24;
+  --yellow-dim:    rgba(251,191,36,0.12);
+  --text:          #dff0ff;
+  --text-secondary: rgba(160,180,210,0.82);
+  --text-muted:    rgba(100,130,170,0.55);
+  --border-glow:   rgba(0,232,255,0.18);
+  --radius:        8px;
+  --transition:    all 0.3s cubic-bezier(0.4,0,0.2,1);
+  --task-done-bg:     rgba(34,255,179,0.08);
+  --task-done-border:  rgba(34,255,179,0.3);
+  --task-fail-bg:     rgba(255,56,96,0.08);
+  --task-fail-border:  rgba(255,56,96,0.3);
+  --task-todo-bg:     rgba(10,18,40,0.88);
+  --task-todo-border:  rgba(0,232,255,0.12);
+  --js-green:         #22ffb3;
+  --js-red:           #ff3860;
+  --js-cyan:          #00e8ff;
+  --js-yellow:        #fbbf24;
+  --js-text-secondary: rgba(160,180,210,0.82);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+.font-mono,.metric-value,.pts-change,code,pre,input[type=number],select,.badge,.sync-textarea,.sync-import-textarea{font-family:'SF Mono','Fira Code','Courier New',monospace}
+
+body {
+  font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
+  font-size:14px;line-height:1.6;
+  background-color:var(--bg-deep);
+  background-image:
+    linear-gradient(to right, rgba(0,232,255,0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0,232,255,0.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  color:var(--text);
+  overflow-x:hidden;
+  -webkit-text-size-adjust:100%;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+}
+
+body::after {
+  content:'';position:fixed;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--cyan),transparent);
+  box-shadow:0 0 10px var(--cyan),0 0 40px var(--cyan-glow);
+  z-index:10000;
+}
+
+/* ===== Layout ===== */
+.app{max-width:1100px;margin:0 auto;padding:16px 16px 90px;position:relative;z-index:1}
+h1{font-size:20px;font-weight:700;margin-bottom:2px;letter-spacing:1px;color:var(--cyan);text-shadow:0 0 10px rgba(0,232,255,0.45),0 0 30px rgba(0,232,255,0.15)}
+/* ---- compact header (单行标题+切换器) ---- */
+.compact-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
+.compact-header h1{font-size:20px;font-weight:700;margin-bottom:0;letter-spacing:1px;color:var(--cyan);text-shadow:0 0 10px rgba(0,232,255,0.45),0 0 30px rgba(0,232,255,0.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:1}
+.header-switcher{display:flex;gap:5px;flex-shrink:0}
+.hs-btn{width:40px;height:40px;border-radius:50%;border:2px solid var(--border-glow);background:rgba(10,16,32,0.55);font-size:20px;line-height:1;cursor:pointer;transition:var(--transition);display:flex;align-items:center;justify-content:center;touch-action:manipulation;user-select:none;padding:0;font-family:inherit}
+.hs-btn:hover{border-color:rgba(0,232,255,0.35);background:var(--cyan-dim)}
+.hs-btn:active{transform:scale(0.88)}
+.hs-btn.active-child1{background:linear-gradient(135deg,var(--cyan-dim),rgba(0,232,255,0.06));border-color:var(--cyan);box-shadow:0 0 18px rgba(0,232,255,0.28),inset 0 0 12px rgba(0,232,255,0.04)}
+.hs-btn.active-child2{background:linear-gradient(135deg,rgba(191,90,242,0.13),rgba(191,90,242,0.04));border-color:#bf5af2;box-shadow:0 0 18px rgba(191,90,242,0.25),inset 0 0 12px rgba(191,90,242,0.04)}
+.hs-gear{border-color:rgba(255,255,255,0.12);background:rgba(255,255,255,0.03);margin-left:2px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;transition:var(--transition)}
+.hs-gear:hover{border-color:rgba(0,232,255,0.3);color:var(--cyan);background:var(--cyan-dim)}
+
+/* ===== Bottom Bar (Mobile) ===== */
+.bottom-bar{display:none}
+
+/* ===== Tabs (Desktop) ===== */
+.tabs{display:flex;gap:2px;background:var(--bg-surface);border-radius:var(--radius);padding:4px;margin-bottom:16px;border:1px solid var(--border-glow);box-shadow:0 0 15px rgba(0,232,255,0.06);overflow-x:auto}
+.tabs .tab{padding:8px 16px;cursor:pointer;border:none;background:none;font-size:13px;color:var(--text-secondary);border-radius:6px;margin-bottom:0;transition:var(--transition);white-space:nowrap;flex-shrink:0;font-weight:500;font-family:inherit;letter-spacing:0.3px}
+.tabs .tab:hover{background:var(--cyan-dim);color:var(--cyan)}
+.tabs .tab.active{background:linear-gradient(135deg,var(--cyan-dim),rgba(0,232,255,0.06));color:var(--cyan);font-weight:600;border:1px solid rgba(0,232,255,0.25);box-shadow:0 0 12px rgba(0,232,255,0.15),inset 0 0 12px rgba(0,232,255,0.04);text-shadow:0 0 8px rgba(0,232,255,0.35)}
+
+/* ===== Panels ===== */
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Cards ===== */
+.card{background:var(--bg-card);border-radius:var(--radius);padding:16px;border:1px solid var(--border-glow);margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.2);transition:var(--transition);position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),rgba(0,232,255,0.2),var(--cyan));background-size:200% 100%;opacity:0;transition:opacity 0.3s}
+.card:hover::before{opacity:1;animation:borderGlow 3s linear infinite}
+@keyframes borderGlow{0%{background-position:0% 0%}100%{background-position:200% 0%}}
+.card:hover{border-color:rgba(0,232,255,0.3);box-shadow:0 4px 16px rgba(0,0,0,0.3),0 0 12px rgba(0,232,255,0.06)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:14px;color:var(--cyan);display:flex;align-items:center;gap:6px;text-shadow:0 0 8px rgba(0,232,255,0.25);letter-spacing:0.5px}
+
+/* ===== Metrics ===== */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:16px}
+#practiceStatsCard{margin-bottom:14px}
+.metric{background:var(--bg-card);border-radius:var(--radius);padding:14px 16px;border:1px solid var(--border-glow);box-shadow:0 2px 8px rgba(0,0,0,0.15);position:relative;overflow:hidden;transition:var(--transition)}
+.metric::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:3px 0 0 3px;box-shadow:0 0 8px currentColor}
+.metric:nth-child(1)::after{background:var(--cyan);color:var(--cyan)}
+.metric:nth-child(2)::after{background:var(--green);color:var(--green)}
+.metric:nth-child(3)::after{background:var(--yellow);color:var(--yellow)}
+.metric:nth-child(4)::after{background:var(--green);color:var(--green);opacity:0.6}
+.metric:hover{transform:translateY(-3px);border-color:rgba(0,232,255,0.35);box-shadow:0 4px 16px rgba(0,0,0,0.25),0 0 10px rgba(0,232,255,0.08)}
+.metric-label{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-weight:500;text-transform:uppercase;letter-spacing:0.8px}
+.metric-value{font-size:22px;font-weight:700;letter-spacing:-0.5px;text-shadow:0 0 10px currentColor}
+.metric-value.gold{color:var(--yellow)}
+.metric-value.blue{color:var(--cyan)}
+.metric-value.green{color:var(--green)}
+
+/* ===== Buttons ===== */
+.btn{padding:9px 18px;border-radius:var(--radius);border:1px solid var(--border-glow);cursor:pointer;font-size:14px;font-weight:500;background:var(--bg-surface);color:var(--text);transition:var(--transition);touch-action:manipulation;user-select:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:inherit;letter-spacing:0.3px}
+.btn:active{transform:scale(0.97)}
+.btn-block{display:flex;width:100%}
+.btn-primary{background:linear-gradient(135deg,var(--cyan-dim),rgba(0,232,255,0.06));color:var(--cyan);border-color:rgba(0,232,255,0.35);box-shadow:0 0 15px rgba(0,232,255,0.18),inset 0 0 15px rgba(0,232,255,0.04);text-shadow:0 0 8px rgba(0,232,255,0.35)}
+.btn-primary:hover{background:linear-gradient(135deg,rgba(0,232,255,0.22),rgba(0,232,255,0.08));border-color:var(--cyan);box-shadow:0 0 25px rgba(0,232,255,0.3),0 0 50px rgba(0,232,255,0.08),inset 0 0 20px rgba(0,232,255,0.06);transform:translateY(-1px)}
+.btn-danger{background:var(--red-dim);color:var(--red);border-color:rgba(255,56,96,0.35);box-shadow:0 0 15px rgba(255,56,96,0.12);text-shadow:0 0 8px rgba(255,56,96,0.35)}
+.btn-danger:hover{background:rgba(255,56,96,0.2);border-color:var(--red);box-shadow:0 0 25px rgba(255,56,96,0.25);transform:translateY(-1px)}
+.btn:disabled{opacity:0.4;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+/* ===== Form ===== */
+.form-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+label{font-size:12px;color:var(--text-secondary);font-weight:600;text-transform:uppercase;letter-spacing:0.8px}
+input,select,textarea{width:100%;padding:10px 14px;border:1px solid var(--border-glow);border-radius:var(--radius);font-size:15px;background:rgba(10,16,32,0.82);color:var(--text);outline:none;appearance:none;-webkit-appearance:none;transition:var(--transition);font-family:inherit;letter-spacing:0.3px}
+input[type=number]{font-family:'SF Mono','Fira Code','Courier New',monospace;font-variant-numeric:tabular-nums}
+input:focus,select:focus,textarea:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,232,255,0.1),0 0 18px rgba(0,232,255,0.06);background:rgba(10,16,32,0.95)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2300e8ff' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;cursor:pointer}
+textarea{min-height:60px;resize:vertical}
+
+/* ===== Table ===== */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:var(--radius);border:1px solid var(--border-glow)}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:500px}
+th{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-glow);color:var(--cyan);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;background:rgba(10,16,32,0.9);text-shadow:0 0 6px rgba(0,232,255,0.25)}
+td{padding:10px 12px;border-bottom:1px solid rgba(0,232,255,0.05);vertical-align:middle;white-space:nowrap;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,232,255,0.03)}
+
+/* ===== Badges ===== */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;gap:3px;border:1px solid transparent}
+.badge-gold{background:var(--yellow-dim);color:var(--yellow);border-color:rgba(251,191,36,0.25);text-shadow:0 0 6px rgba(251,191,36,0.25)}
+.badge-green{background:var(--green-dim);color:var(--green);border-color:rgba(34,255,179,0.25);text-shadow:0 0 6px rgba(34,255,179,0.25)}
+.badge-blue{background:var(--cyan-dim);color:var(--cyan);border-color:rgba(0,232,255,0.25);text-shadow:0 0 6px rgba(0,232,255,0.25)}
+.badge-red{background:var(--red-dim);color:var(--red);border-color:rgba(255,56,96,0.25);text-shadow:0 0 6px rgba(255,56,96,0.25)}
+.badge-gray{background:rgba(100,130,170,0.08);color:var(--text-muted);border-color:rgba(100,130,170,0.15)}
+
+/* ===== Alert ===== */
+.alert{padding:12px 16px;border-radius:var(--radius);margin-bottom:12px;font-size:13px;line-height:1.5;animation:slideDown 0.3s ease;position:relative;overflow:hidden;border:1px solid transparent}
+.alert::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
+.alert-success{background:var(--green-dim);color:var(--green);border-color:rgba(34,255,179,0.25);text-shadow:0 0 6px rgba(34,255,179,0.2)}
+.alert-success::before{background:var(--green)}
+.alert-error{background:var(--red-dim);color:var(--red);border-color:rgba(255,56,96,0.25);text-shadow:0 0 6px rgba(255,56,96,0.2)}
+.alert-error::before{background:var(--red)}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ===== Misc ===== */
+.empty{text-align:center;padding:40px 20px;color:var(--text-muted);font-size:13px}
+.pts-change{font-weight:700;font-size:14px;text-shadow:0 0 8px currentColor}
+.pts-change.plus{color:var(--green)}
+.pts-change.minus{color:var(--red)}
+.section-header{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:14px}
+.config-row{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.config-row label{min-width:90px;color:var(--text-secondary);font-size:13px;font-weight:600}
+.config-row span{font-size:12px;color:var(--text-secondary)}
+.config-row-inline{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:nowrap}
+.config-row-inline label{min-width:60px;color:var(--text-secondary);font-size:13px;font-weight:600;white-space:nowrap}
+.config-row-inline input[type=number]{width:90px}
+
+/* ===== Streak Box ===== */
+.streak-box{background:linear-gradient(135deg,var(--yellow-dim),rgba(251,191,36,0.04));border-radius:var(--radius);padding:14px;border:1px solid rgba(251,191,36,0.2);box-shadow:0 0 12px rgba(251,191,36,0.06)}
+.streak-box p{margin:5px 0;font-size:13px;color:var(--text)}
+.streak-bar{margin-bottom:14px}
+
+/* ===== 积分页 toggle 按钮 ===== */
+.pts-toggle{display:flex;gap:0;margin-bottom:14px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border-glow)}
+.pts-toggle-btn{flex:1;padding:9px 12px;border:none;background:rgba(255,255,255,0.02);color:var(--text-secondary);font-size:13px;font-weight:600;cursor:pointer;transition:var(--transition);font-family:inherit}
+.pts-toggle-btn.active{background:rgba(0,232,255,0.08);color:var(--cyan);text-shadow:0 0 8px rgba(0,232,255,0.3)}
+.pts-toggle-btn:first-child{border-right:1px solid var(--border-glow)}
+.pts-toggle-btn.active[id$="Spend"]{background:rgba(255,56,96,0.08);color:var(--red);text-shadow:0 0 8px rgba(255,56,96,0.3)}
+
+/* ===== Child Switcher ===== */
+/* ---- old child-switcher/child-btn/child-indicator removed ---- */
+
+/* ===== Sub Tabs ===== */
+.sub-tabs{display:flex;gap:2px;margin-bottom:16px;background:rgba(10,16,32,0.6);border-radius:6px;padding:3px;border:1px solid var(--border-glow)}
+.sub-tabs .sub-tab{padding:8px 16px;cursor:pointer;border:none;background:none;font-size:13px;color:var(--text-secondary);border-radius:6px;margin-bottom:0;transition:var(--transition);white-space:nowrap;flex:1;text-align:center;font-weight:500;font-family:inherit;letter-spacing:0.3px}
+.sub-tabs .sub-tab:hover{background:var(--cyan-dim);color:var(--cyan)}
+.sub-tabs .sub-tab.active{background:var(--bg-surface);color:var(--cyan);font-weight:600;border:1px solid rgba(0,232,255,0.18);box-shadow:0 0 10px rgba(0,232,255,0.08);text-shadow:0 0 6px rgba(0,232,255,0.25)}
+.sub-panel{display:none}
+.sub-panel.active{display:block;animation:fadeIn 0.2s ease}
+
+/* ===== Placeholder ===== */
+.placeholder-page{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.placeholder-page .placeholder-icon{font-size:48px;margin-bottom:16px;display:block;filter:drop-shadow(0 0 10px rgba(0,232,255,0.25))}
+.placeholder-page h2{font-size:18px;color:var(--text-secondary);margin-bottom:8px;font-weight:600}
+.placeholder-page p{font-size:13px;color:var(--text-muted);margin-bottom:24px}
+
+/* ===== Stars ===== */
+.star-row{display:flex;gap:6px;align-items:center;justify-content:center;margin:14px 0;flex-wrap:nowrap}
+.star-col{display:flex;flex-direction:column;align-items:center;min-width:36px;padding:6px 2px;border-radius:var(--radius);transition:var(--transition)}
+.star-col:hover{background:var(--cyan-dim)}
+.star-col:active .star{transform:scale(0.85)}
+.star{font-size:32px;line-height:1;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);display:inline-block;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))}
+.star-green{color:var(--green);filter:drop-shadow(0 0 8px rgba(34,255,179,0.5))}
+.star-red{color:var(--red);filter:drop-shadow(0 0 8px rgba(255,56,96,0.5))}
+.star-gray{color:rgba(100,130,170,0.25);filter:none}
+.star-label{font-size:10px;color:var(--text-muted);margin-top:4px;font-weight:500;letter-spacing:0.3px}
+
+/* ===== Daily Task Card States ===== */
+.task-done{animation:taskPulseGreen 2s ease-in-out 1;border-color:var(--task-done-border)!important;box-shadow:0 0 18px rgba(34,255,179,0.12),inset 0 0 30px rgba(34,255,179,0.03)!important}
+.task-fail{animation:taskPulseRed 2s ease-in-out 1;border-color:var(--task-fail-border)!important;box-shadow:0 0 18px rgba(255,56,96,0.12),inset 0 0 30px rgba(255,56,96,0.03)!important}
+@keyframes taskPulseGreen{0%{box-shadow:0 0 0 rgba(34,255,179,0)}50%{box-shadow:0 0 25px rgba(34,255,179,0.25)}100%{box-shadow:0 0 18px rgba(34,255,179,0.12)}}
+@keyframes taskPulseRed{0%{box-shadow:0 0 0 rgba(255,56,96,0)}50%{box-shadow:0 0 25px rgba(255,56,96,0.25)}100%{box-shadow:0 0 18px rgba(255,56,96,0.12)}}
+
+/* ===== Settle Button ===== */
+.settle-btn{display:block;width:100%;padding:14px;border-radius:var(--radius);border:1px solid var(--border-glow);font-size:15px;font-weight:700;cursor:pointer;transition:var(--transition);touch-action:manipulation;letter-spacing:0.5px;font-family:inherit}
+.settle-btn.disabled{background:rgba(100,130,170,0.06);color:var(--text-muted);cursor:not-allowed;box-shadow:none!important;border-color:rgba(100,130,170,0.12)}
+.settle-btn.active{background:linear-gradient(135deg,var(--cyan-dim),rgba(0,232,255,0.06));color:var(--cyan);border-color:var(--cyan);box-shadow:0 0 22px rgba(0,232,255,0.28),0 4px 20px rgba(0,232,255,0.12);text-shadow:0 0 12px rgba(0,232,255,0.45)}
+.settle-btn.active:hover{transform:translateY(-2px);box-shadow:0 0 32px rgba(0,232,255,0.38),0 6px 28px rgba(0,232,255,0.15)}
+.settle-btn.active:active{transform:scale(0.98)}
+.settled-box{background:linear-gradient(135deg,var(--green-dim),rgba(34,255,179,0.04));border-radius:var(--radius);padding:14px;border:1px solid rgba(34,255,179,0.22);box-shadow:0 0 12px rgba(34,255,179,0.08);animation:fadeIn 0.3s ease;color:var(--green);text-shadow:0 0 6px rgba(34,255,179,0.25)}
+
+/* ===== Modal Dialog ===== */
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.modal-overlay.show{display:flex;animation:fadeIn 0.2s ease}
+.modal-box{background:var(--bg-surface);border:1px solid var(--border-glow);border-radius:12px;padding:24px;max-width:360px;width:90%;box-shadow:0 0 40px rgba(0,232,255,0.1),0 16px 48px rgba(0,0,0,0.5)}
+.modal-title{font-size:16px;font-weight:600;color:var(--cyan);margin-bottom:12px;letter-spacing:0.3px}
+.modal-body{font-size:14px;color:var(--text);line-height:1.6;margin-bottom:20px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end}
+
+/* ===== Accordion (进阶页) ===== */
+.accordion-item{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--radius);margin-bottom:8px;overflow:hidden;transition:var(--transition)}
+.accordion-header{display:flex;align-items:center;padding:12px 16px;cursor:pointer;user-select:none;gap:8px;transition:var(--transition)}
+.accordion-header:hover{background:rgba(0,232,255,0.04)}
+.accordion-title{font-size:14px;font-weight:600;color:var(--cyan);flex-shrink:0;letter-spacing:0.3px}
+.accordion-summary{font-size:12px;color:var(--text-secondary);flex:1;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.accordion-arrow{font-size:10px;color:var(--text-muted);transition:transform 0.3s ease;margin-left:4px}
+.accordion-item.open .accordion-arrow{transform:rotate(180deg)}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease;padding:0 16px}
+.accordion-item.open .accordion-body{max-height:600px;padding:0 16px 14px}
+.accordion-summary-line{text-align:center;margin:8px 0;font-size:13px}
+.accordion-desc{font-size:12px;color:var(--text-secondary);margin-bottom:8px}
+
+/* ===== Sync / QR Code ===== */
+.sync-qr-box{display:inline-block;padding:16px;background:rgba(10,18,40,0.9);border-radius:var(--radius);border:1px solid var(--border-glow);box-shadow:0 0 20px rgba(0,232,255,0.08)}
+.sync-qr-hint{font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center;letter-spacing:0.3px}
+.export-group-label{font-size:12px;color:var(--text-secondary);margin-bottom:8px;letter-spacing:0.3px}
+.export-btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px}
+.export-btn-row .btn{padding:7px 14px;font-size:13px}
+.export-hint{font-size:11px;margin-bottom:2px}
+.export-divider{height:1px;background:var(--border-glow);margin:10px 0;opacity:0.3}
+.sync-textarea{margin-top:4px;font-size:11px;min-height:60px;width:100%;word-wrap:break-word;font-family:inherit}
+.sync-import-textarea{margin-top:4px;min-height:50px;width:100%;font-size:12px;word-wrap:break-word;font-family:inherit}
+
+/* ===== Utility Classes ===== */
+.flex-row{display:flex;gap:8px;flex-wrap:wrap}
+.flex-row-center{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.flex-center{display:flex;align-items:center;justify-content:center}
+.gap-sm{gap:6px}
+.gap-md{gap:10px}
+.mt-sm{margin-top:8px}
+.mt-md{margin-top:12px}
+.mb-sm{margin-bottom:8px}
+.mb-md{margin-bottom:12px}
+.text-sm{font-size:12px}
+.text-xs{font-size:11px}
+.text-center{text-align:center}
+.text-secondary{color:var(--text-secondary)}
+.text-muted{color:var(--text-muted)}
+.text-green{color:var(--green)}
+.text-red{color:var(--red)}
+.font-medium{font-weight:500}
+.w-full{width:100%}
+.flex-1{flex:1;min-width:0}
+.min-w-120{min-width:120px}
+.w-120{width:120px}
+.w-140{width:140px}
+.w-200{width:200px;max-width:200px}
+.w-100{width:100px}
+.grid-2col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.span-full{grid-column:1/-1}
+.inline-block{display:inline-block}
+.no-margin{margin:0}
+.hidden{display:none}
+
+.btn-sm{padding:4px 10px;font-size:12px}
+.btn-icon{padding:6px 14px}
+
+/* ===== Daily Panel ===== */
+#dailyDateSummary{font-size:13px;color:var(--text-secondary);padding:8px 12px;background:var(--bg-card);border-radius:var(--radius);min-width:160px;text-align:center;border:1px solid var(--border-glow);align-self:flex-end}
+#dailyCheckinReminder{background:var(--yellow-dim);border:1px solid rgba(251,191,36,0.25);color:var(--yellow);border-radius:var(--radius);padding:12px 16px;margin-top:8px;animation:slideDown 0.3s ease}
+#bedtimeStatus{font-size:12px;color:var(--text-secondary);margin-bottom:10px}
+
+.bedtime-btn{padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border-glow);background:var(--bg-card);color:var(--text-secondary);cursor:pointer;transition:var(--transition);text-align:center;font-family:inherit;flex:1;min-width:120px;font-size:13px;line-height:1.5;touch-action:manipulation}
+.bedtime-btn:hover{border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim)}
+.bedtime-btn.active{border-color:var(--cyan);color:var(--cyan);background:linear-gradient(135deg,var(--cyan-dim),rgba(0,232,255,0.06));box-shadow:0 0 15px rgba(0,232,255,0.2)}
+
+.rule-box{font-size:12px;color:var(--text-secondary);line-height:2;background:var(--bg-card);border-radius:var(--radius);padding:8px 12px}
+.rule-box strong{color:var(--green)}
+.rule-box strong.negative{color:var(--red)}
+
+/* ===== 成就系统 v2 ===== */
+.ach-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.ach-stat-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--radius);padding:14px;text-align:center;position:relative;overflow:hidden}
+.ach-stat-card::after{content:'';position:absolute;top:0;left:0;bottom:0;width:3px;border-radius:3px 0 0 3px;box-shadow:0 0 8px currentColor}
+.ach-stat-card:nth-child(1)::after{background:var(--cyan);color:var(--cyan)}
+.ach-stat-card:nth-child(2)::after{background:var(--yellow);color:var(--yellow)}
+.ach-stat-card:nth-child(3)::after{background:var(--green);color:var(--green)}
+.ach-stat-num{display:block;font-size:28px;font-weight:800;letter-spacing:-1px;color:var(--text);text-shadow:0 0 12px currentColor}
+.ach-stat-card:nth-child(1) .ach-stat-num{color:var(--cyan)}
+.ach-stat-card:nth-child(2) .ach-stat-num{color:var(--yellow)}
+.ach-stat-card:nth-child(3) .ach-stat-num{color:var(--green)}
+.ach-stat-label{display:block;font-size:11px;color:var(--text-secondary);margin-top:2px;letter-spacing:0.5px}
+.ach-overall-bar{height:20px;background:rgba(10,16,32,0.6);border:1px solid var(--border-glow);border-radius:10px;overflow:hidden;position:relative;margin-bottom:18px}
+.ach-overall-progress{height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));border-radius:10px;transition:width 0.6s ease;box-shadow:0 0 12px rgba(0,232,255,0.3)}
+.ach-overall-text{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:10px;color:var(--text);font-weight:600;letter-spacing:0.3px;text-shadow:0 0 4px rgba(0,0,0,0.8)}
+.ach-group{margin-bottom:20px}
+.ach-group-title{font-size:15px;font-weight:700;color:var(--cyan);margin-bottom:10px;letter-spacing:0.5px;text-shadow:0 0 8px rgba(0,232,255,0.2);display:flex;align-items:center;gap:8px}
+.ach-group-count{font-size:12px;color:var(--text-secondary);font-weight:500;text-shadow:none}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.ach-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:10px;padding:14px 10px;text-align:center;transition:var(--transition);position:relative;overflow:hidden}
+.ach-card:hover{border-color:rgba(0,232,255,0.3);box-shadow:0 0 15px rgba(0,232,255,0.08);transform:translateY(-2px)}
+.ach-card-common{border-color:rgba(100,130,170,0.2)}
+.ach-card-rare{border-color:rgba(251,191,36,0.25);box-shadow:0 0 8px rgba(251,191,36,0.06)}
+.ach-card-rare:hover{border-color:var(--yellow);box-shadow:0 0 18px rgba(251,191,36,0.15)}
+.ach-card-legendary{border-color:rgba(0,232,255,0.25);box-shadow:0 0 8px rgba(0,232,255,0.08),inset 0 0 30px rgba(0,232,255,0.03)}
+.ach-card-legendary:hover{border-color:var(--cyan);box-shadow:0 0 25px rgba(0,232,255,0.2),0 0 50px rgba(0,232,255,0.05)}
+.ach-card-icon{font-size:30px;line-height:1.3;margin-bottom:4px;filter:drop-shadow(0 0 6px currentColor)}
+.ach-card-name{font-size:12px;font-weight:700;color:var(--text);margin-bottom:2px}
+.ach-card-cap{font-size:10px;color:var(--text-muted);margin-bottom:6px;line-height:1.3}
+.ach-card-unlocked{font-size:16px;color:var(--green);text-shadow:0 0 8px var(--green);margin-top:4px}
+.ach-card-bar{height:4px;background:rgba(100,130,170,0.15);border-radius:2px;overflow:hidden;margin:6px 0 2px}
+.ach-card-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease}
+.ach-card-pct{font-size:10px;color:var(--text-muted)}
+
+@media (max-width:375px){
+  .ach-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .ach-card{padding:12px 8px}
+  .ach-stat-num{font-size:22px}
+}
+
+#extra-task-desc{color:var(--text)}
+#extra-task-pts{color:var(--text)}
+
+/* ===== Micro-interactions ===== */
+.badge{animation:badgePop 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes badgePop{0%{transform:scale(0.8);opacity:0}100%{transform:scale(1);opacity:1}}
+.metric-value{animation:countGlow 0.6s ease-out}
+@keyframes countGlow{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}}
+.btn-primary:active,.btn-danger:active{filter:brightness(1.3);transition:filter 0.1s}
+.bedtime-btn.active{animation:bedtimeGlow 2s ease-in-out infinite alternate}
+@keyframes bedtimeGlow{0%{box-shadow:0 0 10px rgba(0,232,255,0.15)}100%{box-shadow:0 0 22px rgba(0,232,255,0.3)}}
+.bottom-bar .btab.active::before{animation:indicatorSlide 0.3s ease-out}
+@keyframes indicatorSlide{from{width:0;opacity:0}to{width:20px;opacity:1}}
+
+/* ===== Responsive ===== */
+.chart-wrap{height:280px;position:relative}
+
+
+@media (max-width:640px){
+  .app{padding:12px 12px 80px}
+  h1{font-size:17px}
+  .tabs{display:none}
+  .bottom-bar{display:flex;position:fixed;bottom:0;left:0;right:0;background:rgba(10,14,26,0.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--border-glow);z-index:100;padding:4px 0;padding-bottom:max(4px,env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(0,232,255,0.06)}
+  .bottom-bar .btab{flex:1;text-align:center;padding:6px 1px;cursor:pointer;border:none;background:none;font-size:10px;color:var(--text-muted);transition:var(--transition);position:relative;font-family:inherit;letter-spacing:0.1px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .bottom-bar .btab svg{display:block;margin:0 auto 1px;width:20px;height:20px;fill:currentColor;transition:var(--transition);filter:drop-shadow(0 0 4px currentColor)}
+  .bottom-bar .btab.active{color:var(--cyan);font-weight:600;text-shadow:0 0 8px rgba(0,232,255,0.5)}
+  .bottom-bar .btab.active::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:24px;height:2px;background:var(--cyan);border-radius:0 0 3px 3px;box-shadow:0 0 8px var(--cyan)}
+  .form-row{grid-template-columns:1fr 1fr}
+  /* 刷题录入表单移动端更紧凑 */
+  #sub-record .form-group{padding-top:0}
+  #sub-record .form-group label{font-size:10px;margin-bottom:1px}
+  #sub-record .form-group input{padding:6px 8px;font-size:14px}
+  .metrics{grid-template-columns:1fr 1fr}
+  .card{padding:14px 12px}
+  input,select,textarea{font-size:16px;padding:10px 12px}
+  .btn{padding:10px 14px;font-size:14px}
+  .config-row{flex-direction:column;align-items:stretch;gap:6px}
+  .config-row label{min-width:auto}
+  .config-row-inline{flex-wrap:nowrap;gap:6px}
+  .config-row-inline label{min-width:auto;font-size:12px}
+  .config-row-inline input[type=number]{width:80px!important}
+  .chart-wrap{height:200px}
+  .mob-col1{grid-template-columns:1fr!important}
+  .compact-header h1{font-size:16px}
+  .hs-btn{width:36px;height:36px;font-size:17px}
+  .star{font-size:26px}
+  .star-col{min-width:30px}
+  .sub-tabs .sub-tab{padding:8px 10px;font-size:12px}
+  /* 刷题统计卡片间距 */
+  #practiceStatsCard{margin-bottom:14px}
+  /* 移动端表格卡片化 */
+  .table-wrap.mob-cards table{display:none}
+  .table-wrap.mob-cards .mob-card-list{display:block}
+  .mob-card{background:var(--bg-card);border:1px solid var(--border-glow);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
+  .mob-card-field{display:flex;flex-direction:column;gap:2px}
+  .mob-card-field .field-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px}
+  .mob-card-field .field-value{font-size:13px;color:var(--text)}
+  .mob-card .mob-card-actions{margin-left:auto;display:flex;gap:6px}
+}
+.mob-card-list{display:none}
+
+@media (min-width:641px){
+  .bottom-bar{display:none!important}
+  .mob-col1{grid-template-columns:1fr 1fr!important}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="compact-header">
+    <h1 id="compactTitle">👦 饶梓铭 · 成绩 & 积分</h1>
+    <div class="header-switcher">
+      <button class="hs-btn active-child1" id="hsBtn1" onclick="switchChild(1)" title="饶梓铭">👦</button>
+      <button class="hs-btn" id="hsBtn2" onclick="switchChild(2)" title="饶思微">👧</button>
+      <button class="hs-btn hs-gear" id="settingsGear" onclick="openSettings()" title="设置"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+    </div>
+  </div>
+  <div id="alertBox" class="hidden" role="alert" aria-live="polite"></div>
+
+  <!-- 桌面端Tab -->
+  <div class="tabs" id="desktopTabs" role="tablist" aria-label="主导航">
+    <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard',this)" role="tab" aria-selected="true">总览</button>
+    <button class="tab" data-tab="practice" onclick="switchTab('practice',this)" role="tab" aria-selected="false">刷题</button>
+    <button class="tab" data-tab="daily" onclick="switchTab('daily',this)" role="tab" aria-selected="false">日常</button>
+    <button class="tab" data-tab="advanced" onclick="switchTab('advanced',this)" role="tab" aria-selected="false">进阶</button>
+    <button class="tab" data-tab="achievements" onclick="switchTab('achievements',this)" role="tab" aria-selected="false">成就</button>
+    <button class="tab" data-tab="points" onclick="switchTab('points',this)" role="tab" aria-selected="false">积分</button>
+  </div>
+
+  <!-- ========== 总览 ========== -->
+  <div id="panel-dashboard" class="panel active" role="tabpanel" aria-label="总览">
+    <!-- 核心指标 -->
+    <div class="metrics" id="dashMetrics"></div>
+    <!-- Pool A & Pool B 分组 -->
+    <div class="grid-2col mob-col1">
+      <div class="card"><div class="card-title">📋 行为积分池</div><div id="poolAView"></div></div>
+      <div class="card"><div class="card-title">📝 刷题积分池</div><div id="poolBView"></div></div>
+    </div>
+    <!-- 近期积分动态 -->
+    <div class="card mt-md">
+      <div class="card-title">近期积分动态</div>
+      <div id="recentPoints"></div>
+    </div>
+  </div>
+
+  <!-- ========== 成就 ========== -->
+  <div id="panel-achievements" class="panel" role="tabpanel" aria-label="成就">
+    <div id="achievementList"></div>
+  </div>
+
+  <!-- ========== 刷题（含子页面：录入/记录/趋势） ========== -->
+  <div id="panel-practice" class="panel" role="tabpanel" aria-label="刷题">
+    <div class="sub-tabs" id="practiceSubTabs">
+      <button class="sub-tab active" data-sub="record" onclick="switchSubTab('record',this)">📝 录入</button>
+      <button class="sub-tab" data-sub="history" onclick="switchSubTab('history',this)">📋 记录</button>
+      <button class="sub-tab" data-sub="trend" onclick="switchSubTab('trend',this)">📈 趋势</button>
+    </div>
+
+    <!-- 子页面：录入 -->
+    <div id="sub-record" class="sub-panel active">
+      <div id="practiceStatsCard">
+        <div id="practiceStats"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">录入新成绩</div>
+        <div class="form-row">
+          <div class="form-group"><label>考试日期</label><input type="date" id="inp-date"></div>
+          <div class="form-group"><label>科目名称</label><input type="text" id="inp-subject" placeholder="如：数学、英语"></div>
+          <div class="form-group"><label>成绩分数</label><input type="number" id="inp-score" min="0"></div>
+          <div class="form-group"><label>班级排名</label><input type="number" id="inp-rank" min="1"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group span-full"><label>备注</label><input type="text" id="inp-note"></div>
+        </div>
+        <div id="pointsPreview" class="alert alert-success hidden"></div>
+        <button class="btn btn-primary btn-block" onclick="addRecord()">确认录入</button>
+      </div>
+      <div class="card mt-md">
+        <div class="card-title">📐 计分规则</div>
+        <div class="rule-box" id="practiceRuleBox">
+          每次录入：<strong>+<span id="ruleBase2">20</span> 积分</strong><br>
+          前3名：额外 <strong>+<span id="ruleTop3_2">30</span> 积分</strong><br>
+          连续前3（第3次起）：第3次 <strong>+<span id="ruleStreak2">10</span></strong>，第4次<strong>+20</strong>，以此类推
+        </div>
+      </div>
+    </div>
+
+    <!-- 子页面：记录 -->
+    <div id="sub-history" class="sub-panel">
+      <div class="card">
+        <div class="section-header"><div class="card-title no-margin">全部成绩记录</div></div>
+        <div class="flex-row mb-md">
+          <input type="text" id="searchInput" placeholder="搜索科目" class="flex-1 min-w-120" oninput="renderHistory()">
+          <select id="filterSubject" onchange="renderHistory()" class="w-120"><option value="">全部科目</option></select>
+        </div>
+        <div class="table-wrap mob-cards"><table><thead><tr><th>日期</th><th>科目</th><th>成绩</th><th>排名</th><th>积分</th><th>操作</th></tr></thead><tbody id="historyTable"></tbody></table><div class="mob-card-list" id="historyMobCards"></div></div>
+        <div id="historyEmpty" class="empty hidden">暂无记录</div>
+      </div>
+    </div>
+
+    <!-- 子页面：趋势 -->
+    <div id="sub-trend" class="sub-panel">
+      <div class="card">
+        <div class="card-title">科目筛选：
+          <select id="trendSubject" onchange="renderTrend()" class="w-140 inline-block"><option value="">全部科目</option></select>
+        </div>
+      </div>
+      <div class="card"><div class="card-title">成绩趋势</div><div class="chart-wrap"><canvas id="scoreChart"></canvas></div></div>
+      <div class="card mt-md"><div class="card-title">排名趋势</div><div class="chart-wrap"><canvas id="rankChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- ========== 日常（含子页面：打卡/历史） ========== -->
+  <div id="panel-daily" class="panel" role="tabpanel" aria-label="日常">
+    <div class="sub-tabs" id="dailySubTabs">
+      <button class="sub-tab active" data-sub="checkin" onclick="switchDailySubTab('checkin',this)">📋 今日打卡</button>
+      <button class="sub-tab" data-sub="dailyHistory" onclick="switchDailySubTab('dailyHistory',this)">📅 历史记录</button>
+    </div>
+
+    <!-- 子页面：今日打卡 -->
+    <div id="sub-daily-checkin" class="sub-panel active">
+      <div class="card mb-sm">
+        <div class="flex-row-center">
+          <div class="form-group flex-1 min-w-120 no-margin">
+            <label class="text-xs">选择日期</label>
+            <input type="date" id="daily-date" onchange="renderDaily()">
+          </div>
+          <div id="dailyDateSummary"></div>
+        </div>
+      </div>
+
+      <!-- 未打卡提醒 -->
+      <div id="dailyCheckinReminder" class="card hidden"></div>
+
+      <!-- 积分统计 -->
+      <div class="metrics mb-md" id="dailyMetrics"></div>
+
+      <!-- 任务列表 -->
+      <div id="dailyTaskList"></div>
+
+      <!-- 就寝时间 -->
+      <div class="card mt-md">
+        <div class="card-title">🌙 就寝时间</div>
+        <div id="bedtimeStatus"></div>
+        <div class="flex-row">
+          <button class="btn bedtime-btn" id="btn-bed-chat" onclick="bedtimeCheck('chat')">
+            💬 要聊天<br><span class="text-xs">9:10上床 +5分</span>
+          </button>
+          <button class="btn bedtime-btn" id="btn-bed-quiet" onclick="bedtimeCheck('quiet')">
+            🤫 不要聊天<br><span class="text-xs">9:30上床 +5分</span>
+          </button>
+          <button class="btn bedtime-btn" id="btn-bed-late" onclick="bedtimeCheck('late')">
+            🌙 特殊情况<br><span class="text-xs">11:00上床 +5分</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 自定义备注 -->
+      <div class="card mt-md">
+        <div class="card-title">📝 附加记录（好事/额外家务等）</div>
+        <div class="form-row">
+          <div class="form-group"><label>加分说明</label><input type="text" id="extra-task-desc" placeholder="如：帮忙洗碗、主动浇花"></div>
+          <div class="form-group"><label>加分分值</label><input type="number" id="extra-task-pts" min="1" placeholder="如：5" class="w-100"></div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="addExtraTask()">添加加分记录</button>
+        <div id="extraTaskList" class="mt-sm"></div>
+      </div>
+    </div>
+
+    <!-- 子页面：历史记录 -->
+    <div id="sub-daily-history" class="sub-panel">
+      <div class="card">
+        <div class="card-title">行为积分历史</div>
+        <div class="table-wrap mob-cards"><table>
+          <thead><tr><th>日期</th><th>任务完成</th><th>扣分</th><th>附加</th><th>当日小计</th></tr>
+          </thead><tbody id="dailyHistoryTable"></tbody>
+        </table><div class="mob-card-list" id="dailyHistoryMobCards"></div></div>
+        <div id="dailyHistoryEmpty" class="empty hidden">暂无历史记录</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 进阶 ========== -->
+  <div id="panel-advanced" class="panel" role="tabpanel" aria-label="进阶">
+    <!-- 周选择器 -->
+    <div class="card">
+      <div class="flex-between">
+        <button class="btn btn-icon" onclick="changeAdvWeek(-1)" id="advWeekPrev">◀</button>
+        <div class="text-center flex-1">
+          <div class="text-sm font-medium" id="advWeekTitle">本周进阶挑战</div>
+          <div class="text-xs text-secondary" id="advWeekRange"></div>
+        </div>
+        <button class="btn btn-icon" onclick="changeAdvWeek(1)" id="advWeekNext">▶</button>
+      </div>
+    </div>
+
+    <!-- 分类1：按时完成作业 -->
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-title">📝 按时完成作业</span>
+        <span class="accordion-summary" id="advCat1AccSum"></span>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-desc">作业专心完成，不拖拉</div>
+        <div id="advCat1Stars"></div>
+        <div id="advCat1Summary" class="accordion-summary-line"></div>
+        <div class="rule-box">⭐ 7颗绿星 → <strong>+10分</strong>　⭐ 超过3颗红星 → <strong class="negative">-5分</strong></div>
+      </div>
+    </div>
+
+    <!-- 分类2：自主整理 -->
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-title">🎒 自主整理</span>
+        <span class="accordion-summary" id="advCat2AccSum"></span>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-desc">整理书包、书桌、玩具</div>
+        <div id="advCat2Stars"></div>
+        <div id="advCat2Summary" class="accordion-summary-line"></div>
+        <div class="rule-box">⭐ 7颗绿星 → <strong>+10分</strong>　⭐ 超过3颗红星 → <strong class="negative">-5分</strong></div>
+      </div>
+    </div>
+
+    <!-- 分类3：练书法 -->
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-title">✍️ 练书法</span>
+        <span class="accordion-summary" id="advCat3AccSum"></span>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-desc">每周至少完成2次书法练习</div>
+        <div id="advCat3Stars"></div>
+        <div id="advCat3Summary" class="accordion-summary-line"></div>
+        <div class="rule-box">⭐ 2颗绿星 → <strong>+5分</strong>　⭐ 2颗红星 → <strong class="negative">-5分</strong></div>
+      </div>
+    </div>
+
+    <!-- 分类4：计算全对 -->
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-title">🧮 计算全对</span>
+        <span class="accordion-summary" id="advCat4AccSum"></span>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-desc">计算题细心检查，全部正确</div>
+        <div id="advCat4Stars"></div>
+        <div id="advCat4Summary" class="accordion-summary-line"></div>
+        <div class="rule-box">⭐ 5颗绿星 → <strong>+3分</strong>　⭐ 6颗绿星 → <strong>+5分</strong>　⭐ 7颗绿星 → <strong>+10分</strong></div>
+      </div>
+    </div>
+
+    <!-- 分类5：课外阅读 -->
+    <div class="accordion-item">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-title">📖 课外阅读</span>
+        <span class="accordion-summary" id="advCat5AccSum"></span>
+        <span class="accordion-arrow">▼</span>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-desc">认真阅读20分钟以上</div>
+        <div id="advCat5Stars"></div>
+        <div id="advCat5Summary" class="accordion-summary-line"></div>
+        <div class="rule-box">⭐ 5颗绿星 → <strong>+3分</strong>　⭐ 6颗绿星 → <strong>+5分</strong>　⭐ 7颗绿星 → <strong>+10分</strong></div>
+      </div>
+    </div>
+
+    <!-- 结算区域 -->
+    <div class="card" id="advSettleCard">
+      <div id="advSettleArea"></div>
+    </div>
+
+    <!-- 结算历史 -->
+    <div class="card">
+      <div class="card-title">📋 结算历史</div>
+      <div id="advSettleHistory"></div>
+      <div id="advSettleHistoryEmpty" class="empty hidden">暂无结算记录</div>
+    </div>
+  </div>
+
+  <!-- ========== 积分中心 ========== -->
+  <div id="panel-points" class="panel" role="tabpanel" aria-label="积分">
+    <div class="card">
+      <div class="card-title">积分操作</div>
+      <div class="pts-toggle">
+        <button class="pts-toggle-btn active" id="ptsToggleAdd" onclick="switchPtsAction('add')">➕ 增加</button>
+        <button class="pts-toggle-btn" id="ptsToggleSpend" onclick="switchPtsAction('spend')">➖ 消费</button>
+      </div>
+      <div id="ptsFormAdd">
+        <div class="form-group mb-md"><label>增加积分数量</label><input type="number" id="addAmount" min="1"></div>
+        <div class="form-group mb-md"><label>目标池</label>
+          <div class="text-sm text-secondary" style="margin-bottom:6px;margin-top:-4px">选择增加的积分归属哪个池</div>
+          <label class="inline-radio"><input type="radio" name="addPool" value="daily" checked> 行为积分</label>
+          <label class="inline-radio"><input type="radio" name="addPool" value="advanced"> 刷题积分</label>
+        </div>
+        <div class="form-group mb-md"><label>说明</label><input type="text" id="addNote"></div>
+        <button class="btn btn-primary btn-block" onclick="addPoints()">确认增加</button>
+      </div>
+      <div id="ptsFormSpend" class="hidden">
+        <div class="form-group mb-md"><label>消费积分数量</label><input type="number" id="spendAmount" min="1"></div>
+        <div class="form-group mb-md"><label>目标池</label>
+          <div class="text-sm text-secondary" style="margin-bottom:6px;margin-top:-4px">选择从哪个池扣除积分</div>
+          <label class="inline-radio"><input type="radio" name="spendPool" value="daily" checked> 行为积分</label>
+          <label class="inline-radio"><input type="radio" name="spendPool" value="advanced"> 刷题积分</label>
+        </div>
+        <div class="form-group mb-md"><label>消费说明</label><input type="text" id="spendNote"></div>
+        <button class="btn btn-danger btn-block" onclick="spendPoints()">确认消费</button>
+      </div>
+    </div>
+    <div id="streakBar" class="streak-bar"></div>
+    <div class="card mt-md">
+      <div class="card-title">积分变动记录</div>
+      <div class="table-wrap mob-cards"><table><thead><tr><th>时间</th><th>类型</th><th>变动</th><th>余额</th><th>说明</th></tr></thead><tbody id="pointsLog"></tbody></table><div class="mob-card-list" id="pointsLogMobCards"></div></div>
+      <div id="pointsLogEmpty" class="empty hidden">暂无积分记录</div>
+    </div>
+  </div>
+
+  <!-- ========== 系统设置 ========== -->
+  <div id="panel-settings" class="panel" role="tabpanel" aria-label="设置">
+    <div class="card">
+      <div class="card-title">👶 孩子配置</div>
+      <div class="config-row" style="display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:10px"><label style="min-width:50px">名称</label><input type="text" id="cfg-child-name" placeholder="如：小明" style="flex:1;min-width:100px"><label style="min-width:auto;margin-left:4px">年级</label><select id="cfg-child-grade"><option value="1">1年级</option><option value="2">2年级</option><option value="3">3年级</option><option value="4">4年级</option><option value="5">5年级</option><option value="6">6年级</option></select></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-primary" onclick="saveChildNames()">保存名称和年级</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">📝 积分规则</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="flex:1;min-width:100px"><label class="text-sm text-secondary">录入基础</label><input type="number" id="cfg-base" min="0" style="width:100%"></div>
+        <div style="flex:1;min-width:100px"><label class="text-sm text-secondary">前3额外</label><input type="number" id="cfg-top3" min="0" style="width:100%"></div>
+        <div style="flex:1;min-width:100px"><label class="text-sm text-secondary">连续基数</label><input type="number" id="cfg-streak-base" min="0" style="width:100%"></div>
+      </div>
+      <button class="btn btn-sm btn-primary" onclick="saveRules()">保存规则</button>
+    </div>
+    <div class="card">
+      <div class="card-title">🎯 积分余额调整</div>
+      <div class="config-row-inline"><label>行为积分</label><input type="number" id="cfg-total-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-daily" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" onclick="saveTotalPoints()">保存</button></div>
+      <div class="config-row-inline"><label>刷题积分</label><input type="number" id="cfg-quiz-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-adv" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" onclick="saveQuizPoints()">保存</button></div>
+    </div>
+    <div class="card">
+      <div class="card-title">🌐 跨设备同步</div>
+      <p class="text-sm text-secondary mb-md">手机A生成同步码，手机B粘贴同步码，即可同步<strong>当前孩子</strong>的数据</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <button class="btn btn-sm btn-primary" onclick="generateSyncCode()">生成同步码</button>
+        <button class="btn btn-sm" onclick="importSyncFile()">从文件导入</button>
+        <input type="file" id="syncFileInput" accept=".json,.txt" class="hidden" onchange="doImportSyncFile(event)">
+      </div>
+      <div id="syncCodeArea" class="hidden mb-md">
+        <label class="text-sm text-secondary">同步码（在另一部手机上粘贴此码）</label>
+        <textarea id="syncCodeText" readonly class="sync-textarea"></textarea>
+        <div class="flex-row mt-sm">
+          <button class="btn btn-sm" onclick="copySyncCode()">📋 复制同步码</button>
+          <button class="btn btn-sm" id="btnShowQR" onclick="showSyncQR()">📱 生成二维码</button>
+        </div>
+        <div id="syncQRBox" class="hidden mt-md text-center">
+          <div id="syncQRCode" class="sync-qr-box"></div>
+          <p class="sync-qr-hint">用另一部手机扫描此二维码</p>
+        </div>
+      </div>
+      <div class="mt-md">
+        <label class="text-sm text-secondary">粘贴同步码</label>
+        <textarea id="importSyncCodeText" placeholder="粘贴同步码..." class="sync-import-textarea"></textarea>
+        <button class="btn btn-primary btn-sm mt-sm w-full" onclick="importSyncCode()">导入同步数据</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">📦 数据管理</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-sm" onclick="exportJSON()">📥 JSON 备份</button>
+        <button class="btn btn-sm" onclick="exportCSV()">📊 CSV 成绩明细</button>
+        <button class="btn btn-sm" onclick="exportReport()">📄 成绩报告</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+        <button class="btn btn-sm" onclick="importData()">导入数据</button>
+        <button class="btn btn-sm btn-danger" onclick="clearAllData()">清空数据</button>
+      </div>
+      <p class="text-sm text-muted">JSON 备份可恢复 · 仅操作当前孩子</p>
+      <input type="file" id="importFile" accept=".json" class="hidden" onchange="doImport(event)">
+    </div>
+  </div>
+</div>
+
+<!-- 主题化确认对话框 -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-title" id="confirmTitle">确认操作</div>
+    <div class="modal-body" id="confirmBody">确定要执行此操作吗？</div>
+    <div class="modal-actions">
+      <button class="btn" id="confirmCancel" onclick="modalResolve(false)">取消</button>
+      <button class="btn btn-danger" id="confirmOk" onclick="modalResolve(true)">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- 手机底部导航 -->
+<nav class="bottom-bar" id="bottomBar" role="tablist" aria-label="主导航">
+  <button class="btab active" data-tab="dashboard" onclick="switchTabMobile('dashboard',this)" role="tab" aria-selected="true" aria-label="总览">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-9a1 1 0 0 0-1.4 0l-9 9A1 1 0 0 0 3 13zm9-8.6 6 6V20h-5v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5H6v-9.6l6-6z" fill="currentColor"/></svg><br>总览
+  </button>
+  <button class="btab" data-tab="practice" onclick="switchTabMobile('practice',this)" role="tab" aria-selected="false" aria-label="刷题">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2V7h-4v2h2z" fill="currentColor"/></svg><br>刷题
+  </button>
+  <button class="btab" data-tab="daily" onclick="switchTabMobile('daily',this)" role="tab" aria-selected="false" aria-label="日常">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/></svg><br>日常
+  </button>
+  <button class="btab" data-tab="advanced" onclick="switchTabMobile('advanced',this)" role="tab" aria-selected="false" aria-label="进阶">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z" fill="currentColor"/></svg><br>进阶
+  </button>
+  <button class="btab" data-tab="achievements" onclick="switchTabMobile('achievements',this)" role="tab" aria-selected="false" aria-label="成就">
+    <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.82 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg><br>成就
+  </button>
+  <button class="btab" data-tab="points" onclick="switchTabMobile('points',this)" role="tab" aria-selected="false" aria-label="积分">
+    <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg><br>积分
+  </button>
+</nav>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="index.js"></script>
+</body>
+</html>
