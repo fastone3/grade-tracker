@@ -5,7 +5,6 @@
 面向两个孩子的学习积分管理工具 · 科幻深色 UI · 纯前端运行
 
 [![GitHub Pages](https://img.shields.io/badge/GitHub%20Pages-%23333?style=flat-square&logo=github)](https://fastone3.github.io/grade-tracker/)
-[![Netlify Preview](https://img.shields.io/badge/Netlify%20Preview-%2300C7B7?style=flat-square&logo=netlify)](https://unique-youtiao-229b1f.netlify.app/)
 [![GitHub last commit](https://img.shields.io/github/last-commit/fastone3/grade-tracker?style=flat-square&color=blue)](https://github.com/fastone3/grade-tracker/commits/main)
 
 </div>
@@ -18,7 +17,6 @@
 | 入口 | 地址 | 说明 |
 |------|------|------|
 | **GitHub Pages** | [fastone3.github.io/grade-tracker](https://fastone3.github.io/grade-tracker/) | 主站，代码推送后自动部署 |
-| **Netlify 预览** | [unique-youtiao-229b1f.netlify.app](https://unique-youtiao-229b1f.netlify.app/) | 测试环境，最新功能抢先体验 |
 
 数据完全存储在浏览器 localStorage 中，**无需注册、无需后端、即开即用**。
 
