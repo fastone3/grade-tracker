@@ -114,6 +114,7 @@ function taskCheck(taskId) {
   if (!task) return;
 
   var alreadyDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
+  pushUndoSnapshot(data);
   if (alreadyDone) {
     // 取消打卡
     var prevDelta = dayData.tasks[taskId].delta;
@@ -155,6 +156,7 @@ function taskDeduct(taskId) {
   var task = DAILY_TASKS.find(function(t){ return t.id === taskId; });
   if (!task || !task.minusTrigger) { showAlert('该项目不支持扣分', 'error'); return; }
 
+  pushUndoSnapshot(data);
   var wasDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
   if (wasDone && dayData.tasks[taskId].delta > 0) {
     data.dailyPoints = (data.dailyPoints || 0) - dayData.tasks[taskId].delta;
@@ -187,6 +189,7 @@ function bedtimeCheck(key) {
   var rule = BEDTIME_RULES.find(function(r){ return r.key === key; });
   if (!rule) return;
 
+  pushUndoSnapshot(data);
   if (dayData.bedtime && dayData.bedtime.key === key) {
     // 取消
     data.dailyPoints = (data.dailyPoints || 0) - rule.pts;
@@ -224,6 +227,7 @@ function addExtraTask() {
   var pts = parseInt(document.getElementById('extra-task-pts').value);
   if (!desc || !pts || pts < 1) { showAlert('请填写加分说明和分值', 'error'); return; }
 
+  pushUndoSnapshot(data);
   var dayData = getDayData(date);
   var id = Date.now().toString();
   data.dailyPoints = (data.dailyPoints || 0) + pts;
@@ -247,6 +251,7 @@ function removeExtraTask(date, extraId) {
   var dayData = getDayData(date);
   var extra = dayData.extras.find(function(e){ return e.id === extraId; });
   if (!extra) return;
+  pushUndoSnapshot(data);
   data.dailyPoints = (data.dailyPoints || 0) - extra.pts;
   data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
   removeLastDailyLog(date, 'extra_' + extraId);
@@ -468,6 +473,7 @@ function bedtimeCancel() {
   if (!date) return;
   var dayData = getDayData(date);
   if (!dayData.bedtime) return;
+  pushUndoSnapshot(data);
   var prev = BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
   if (prev) {
     data.dailyPoints = (data.dailyPoints || 0) - prev.pts;

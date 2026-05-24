@@ -118,6 +118,7 @@ function refreshCurrentPanel() {
   else if (panelId === 'panel-advanced') renderAdvanced();
   else if (panelId === 'panel-achievements') renderAchievementList();
   else if (panelId === 'panel-settings') renderSettings();
+  updateUndoBtnState();
 }
 
 /**
@@ -294,6 +295,21 @@ function bindEventHandlers() {
   if (mc) mc.addEventListener('click', function(){ modalResolve(false); });
   var mo = document.getElementById('confirmOk');
   if (mo) mo.addEventListener('click', function(){ modalResolve(true); });
+
+  /* ---- 撤销操作 ---- */
+  var btnUndo = document.getElementById('btnUndo');
+  if (btnUndo) btnUndo.addEventListener('click', function(){ undoLastOperation(); });
+}
+
+/**
+ * 更新撤销按钮的启用/禁用状态
+ */
+function updateUndoBtnState() {
+  var btn = document.getElementById('btnUndo');
+  if (!btn) return;
+  var hasUndo = data && data.undoStack && data.undoStack.length > 0;
+  btn.disabled = !hasUndo;
+  btn.title = hasUndo ? '撤销上一步操作' : '无操作可撤销';
 }
 
 
@@ -305,6 +321,8 @@ AppState.dailyDateInput = document.getElementById('daily-date');
 if (AppState.dailyDateInput) AppState.dailyDateInput.value = AppState.today;
 updateChildSwitcherLabels();
 checkAutoSettle();
+checkUndoToast();
 renderDashboard();
 // 绑定事件（替代所有 inline onclick）
 bindEventHandlers();
+updateUndoBtnState();

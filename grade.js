@@ -58,6 +58,7 @@ function addRecord() {
   }
   if (rank < 1) { showAlert('排名必须大于0', 'error'); return; }
 
+  pushUndoSnapshot(data);
   var earnedPts = data.rules.base;
   var logDetails = ['录入基础 +' + data.rules.base];
   if (rank <= 3) {
@@ -133,6 +134,7 @@ async function deleteRecord(id) {
   if (!record) { showAlert("记录不存在", "error"); return; }
   var pts = record.earnedPts || 0;
   if (!(await customConfirm("确定删除「" + record.subject + "」记录？将扣减 " + pts + " 积分。", "删除确认"))) return;
+  pushUndoSnapshot(data);
   data.records = data.records.filter(function(r){ return r.id !== id; });
   if (pts > 0) {
     data.advancedPoints = Math.max(0, (data.advancedPoints || 0) - pts);
@@ -162,6 +164,7 @@ function toggleWrongCorrected(id) {
   var record = data.records.find(function(r){ return r.id === id; });
   if (!record || !record.wrongAnswers) return;
   if (record.wrongAnswers.corrected >= record.wrongAnswers.total) return;
+  pushUndoSnapshot(data);
   record.wrongAnswers.corrected++;
   saveData(data);
   if (record.wrongAnswers.corrected >= record.wrongAnswers.total) {
