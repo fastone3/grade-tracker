@@ -139,6 +139,149 @@ function switchSubTabUI(sub) {
 }
 
 
+/* ===== 事件绑定（替代模板内联 onclick） ===== */
+/**
+ * 将所有原本通过 inline onclick 绑定的事件迁移到 addEventListener
+ * 页面初始化时调用一次
+ */
+function bindEventHandlers() {
+  /* ---- Header ---- */
+  var hs1 = document.getElementById('hsBtn1');
+  if (hs1) hs1.addEventListener('click', function(){ switchChild(1); });
+  var hs2 = document.getElementById('hsBtn2');
+  if (hs2) hs2.addEventListener('click', function(){ switchChild(2); });
+  var gear = document.getElementById('settingsGear');
+  if (gear) gear.addEventListener('click', function(){ openSettings(); });
+
+  /* ---- Desktop Tabs ---- */
+  document.querySelectorAll('#desktopTabs .tab').forEach(function(tab){
+    var t = tab.dataset.tab;
+    tab.addEventListener('click', function(){ switchTab(t, tab); });
+  });
+
+  /* ---- Bottom Bar (Mobile Tabs) ---- */
+  document.querySelectorAll('#bottomBar .btab').forEach(function(btab){
+    var t = btab.dataset.tab;
+    btab.addEventListener('click', function(){ switchTabMobile(t, btab); });
+  });
+
+  /* ---- 刷题子标签 ---- */
+  document.querySelectorAll('#practiceSubTabs .sub-tab').forEach(function(st){
+    var sub = st.dataset.sub;
+    st.addEventListener('click', function(){ switchSubTab(sub, st); });
+  });
+
+  /* ---- 日常子标签 ---- */
+  document.querySelectorAll('#dailySubTabs .sub-tab').forEach(function(dst){
+    var sub = dst.dataset.sub;
+    dst.addEventListener('click', function(){ switchDailySubTab(sub, dst); });
+  });
+
+  /* ---- 日常日期变更 ---- */
+  var dd = document.getElementById('daily-date');
+  if (dd) dd.addEventListener('change', function(){ renderDaily(); });
+
+  /* ---- Search / Filter ---- */
+  var si = document.getElementById('searchInput');
+  if (si) si.addEventListener('input', function(){ renderHistory(); });
+  var fs = document.getElementById('filterSubject');
+  if (fs) fs.addEventListener('change', function(){ renderHistory(); });
+
+  /* ---- Trend Subject ---- */
+  var ts = document.getElementById('trendSubject');
+  if (ts) ts.addEventListener('change', function(){ renderTrend(); });
+
+  /* ---- 就寝按钮 ---- */
+  var bedChat = document.getElementById('btn-bed-chat');
+  if (bedChat) bedChat.addEventListener('click', function(){ bedtimeCheck('chat'); });
+  var bedQuiet = document.getElementById('btn-bed-quiet');
+  if (bedQuiet) bedQuiet.addEventListener('click', function(){ bedtimeCheck('quiet'); });
+  var bedLate = document.getElementById('btn-bed-late');
+  if (bedLate) bedLate.addEventListener('click', function(){ bedtimeCheck('late'); });
+
+  /* ---- 附加记录 ---- */
+  var addExtra = document.getElementById('btn-addExtraTask');
+  if (addExtra) addExtra.addEventListener('click', function(){ addExtraTask(); });
+
+  /* ---- 刷题录入 ---- */
+  var addRec = document.getElementById('btn-addRecord');
+  if (addRec) addRec.addEventListener('click', function(){ addRecord(); });
+
+  /* ---- 进阶周切换 ---- */
+  var advPrev = document.getElementById('advWeekPrev');
+  if (advPrev) advPrev.addEventListener('click', function(){ changeAdvWeek(-1); });
+  var advNext = document.getElementById('advWeekNext');
+  if (advNext) advNext.addEventListener('click', function(){ changeAdvWeek(1); });
+
+  /* ---- Accordion（进阶页） ---- */
+  document.querySelectorAll('.accordion-header').forEach(function(ah){
+    ah.addEventListener('click', function(){ toggleAccordion(ah); });
+  });
+
+  /* ---- 积分切换 ---- */
+  var ptsAdd = document.getElementById('ptsToggleAdd');
+  if (ptsAdd) ptsAdd.addEventListener('click', function(){ switchPtsAction('add'); });
+  var ptsSpend = document.getElementById('ptsToggleSpend');
+  if (ptsSpend) ptsSpend.addEventListener('click', function(){ switchPtsAction('spend'); });
+
+  /* ---- 积分操作 ---- */
+  var btnAdd = document.getElementById('btn-addPoints');
+  if (btnAdd) btnAdd.addEventListener('click', function(){ addPoints(); });
+  var btnSpend = document.getElementById('btn-spendPoints');
+  if (btnSpend) btnSpend.addEventListener('click', function(){ spendPoints(); });
+
+  /* ---- 设置 - 孩子配置 ---- */
+  var scn = document.getElementById('btn-saveChildNames');
+  if (scn) scn.addEventListener('click', function(){ saveChildNames(); });
+
+  /* ---- 设置 - 积分规则 ---- */
+  var sr = document.getElementById('btn-saveRules');
+  if (sr) sr.addEventListener('click', function(){ saveRules(); });
+
+  /* ---- 设置 - 积分余额调整 ---- */
+  var stp = document.getElementById('btn-saveTotalPoints');
+  if (stp) stp.addEventListener('click', function(){ saveTotalPoints(); });
+  var sqp = document.getElementById('btn-saveQuizPoints');
+  if (sqp) sqp.addEventListener('click', function(){ saveQuizPoints(); });
+
+  /* ---- 设置 - 同步 ---- */
+  var gsc = document.getElementById('btn-generateSyncCode');
+  if (gsc) gsc.addEventListener('click', function(){ generateSyncCode(); });
+  var isf = document.getElementById('btn-importSyncFile');
+  if (isf) isf.addEventListener('click', function(){ importSyncFile(); });
+  var sfi = document.getElementById('syncFileInput');
+  if (sfi) sfi.addEventListener('change', function(e){ doImportSyncFile(e); });
+  var csc = document.getElementById('btn-copySyncCode');
+  if (csc) csc.addEventListener('click', function(){ copySyncCode(); });
+  var sqr = document.getElementById('btnShowQR');
+  if (sqr) sqr.addEventListener('click', function(){ showSyncQR(); });
+  var isc = document.getElementById('btn-importSyncCode');
+  if (isc) isc.addEventListener('click', function(){ importSyncCode(); });
+
+  /* ---- 设置 - 数据管理 ---- */
+  var ej = document.getElementById('btn-exportJSON');
+  if (ej) ej.addEventListener('click', function(){ exportJSON(); });
+  var ec = document.getElementById('btn-exportCSV');
+  if (ec) ec.addEventListener('click', function(){ exportCSV(); });
+  var er = document.getElementById('btn-exportReport');
+  if (er) er.addEventListener('click', function(){ exportReport(); });
+  var id = document.getElementById('btn-importData');
+  if (id) id.addEventListener('click', function(){ importData(); });
+  var cda = document.getElementById('btn-clearAllData');
+  if (cda) cda.addEventListener('click', function(){ clearAllData(); });
+
+  /* ---- 文件导入 ---- */
+  var impF = document.getElementById('importFile');
+  if (impF) impF.addEventListener('change', function(e){ doImport(e); });
+
+  /* ---- Modal ---- */
+  var mc = document.getElementById('confirmCancel');
+  if (mc) mc.addEventListener('click', function(){ modalResolve(false); });
+  var mo = document.getElementById('confirmOk');
+  if (mo) mo.addEventListener('click', function(){ modalResolve(true); });
+}
+
+
 /* ===== 初始化 ===== */
 var today = new Date().toISOString().slice(0,10);
 document.getElementById('inp-date').value = today;
@@ -148,3 +291,5 @@ if (dailyDateInput) dailyDateInput.value = today;
 updateChildSwitcherLabels();
 checkAutoSettle();
 renderDashboard();
+// 绑定事件（替代所有 inline onclick）
+bindEventHandlers();

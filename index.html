@@ -433,21 +433,21 @@ tr:hover td{background:rgba(0,232,255,0.03)}
   <div class="compact-header">
     <h1 id="compactTitle">👦 饶梓铭 · 成绩 & 积分</h1>
     <div class="header-switcher">
-      <button class="hs-btn active-child1" id="hsBtn1" onclick="switchChild(1)" title="饶梓铭">👦</button>
-      <button class="hs-btn" id="hsBtn2" onclick="switchChild(2)" title="饶思微">👧</button>
-      <button class="hs-btn hs-gear" id="settingsGear" onclick="openSettings()" title="设置"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+      <button class="hs-btn active-child1" id="hsBtn1" title="饶梓铭">👦</button>
+      <button class="hs-btn" id="hsBtn2" title="饶思微">👧</button>
+      <button class="hs-btn hs-gear" id="settingsGear" title="设置"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
     </div>
   </div>
   <div id="alertBox" class="hidden" role="alert" aria-live="polite"></div>
 
   <!-- 桌面端Tab -->
   <div class="tabs" id="desktopTabs" role="tablist" aria-label="主导航">
-    <button class="tab active" data-tab="dashboard" onclick="switchTab('dashboard',this)" role="tab" aria-selected="true">总览</button>
-    <button class="tab" data-tab="practice" onclick="switchTab('practice',this)" role="tab" aria-selected="false">刷题</button>
-    <button class="tab" data-tab="daily" onclick="switchTab('daily',this)" role="tab" aria-selected="false">日常</button>
-    <button class="tab" data-tab="advanced" onclick="switchTab('advanced',this)" role="tab" aria-selected="false">进阶</button>
-    <button class="tab" data-tab="achievements" onclick="switchTab('achievements',this)" role="tab" aria-selected="false">成就</button>
-    <button class="tab" data-tab="points" onclick="switchTab('points',this)" role="tab" aria-selected="false">积分</button>
+    <button class="tab active" data-tab="dashboard" role="tab" aria-selected="true">总览</button>
+    <button class="tab" data-tab="practice" role="tab" aria-selected="false">刷题</button>
+    <button class="tab" data-tab="daily" role="tab" aria-selected="false">日常</button>
+    <button class="tab" data-tab="advanced" role="tab" aria-selected="false">进阶</button>
+    <button class="tab" data-tab="achievements" role="tab" aria-selected="false">成就</button>
+    <button class="tab" data-tab="points" role="tab" aria-selected="false">积分</button>
   </div>
 
   <!-- ========== 总览 ========== -->
@@ -474,9 +474,9 @@ tr:hover td{background:rgba(0,232,255,0.03)}
   <!-- ========== 刷题（含子页面：录入/记录/趋势） ========== -->
   <div id="panel-practice" class="panel" role="tabpanel" aria-label="刷题">
     <div class="sub-tabs" id="practiceSubTabs">
-      <button class="sub-tab active" data-sub="record" onclick="switchSubTab('record',this)">📝 录入</button>
-      <button class="sub-tab" data-sub="history" onclick="switchSubTab('history',this)">📋 记录</button>
-      <button class="sub-tab" data-sub="trend" onclick="switchSubTab('trend',this)">📈 趋势</button>
+      <button class="sub-tab active" data-sub="record">📝 录入</button>
+      <button class="sub-tab" data-sub="history">📋 记录</button>
+      <button class="sub-tab" data-sub="trend">📈 趋势</button>
     </div>
 
     <!-- 子页面：录入 -->
@@ -496,7 +496,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           <div class="form-group span-full"><label>备注</label><input type="text" id="inp-note"></div>
         </div>
         <div id="pointsPreview" class="alert alert-success hidden"></div>
-        <button class="btn btn-primary btn-block" onclick="addRecord()">确认录入</button>
+        <button class="btn btn-primary btn-block" id="btn-addRecord">确认录入</button>
       </div>
       <div class="card mt-md">
         <div class="card-title">📐 计分规则</div>
@@ -513,8 +513,8 @@ tr:hover td{background:rgba(0,232,255,0.03)}
       <div class="card">
         <div class="section-header"><div class="card-title no-margin">全部成绩记录</div></div>
         <div class="flex-row mb-md">
-          <input type="text" id="searchInput" placeholder="搜索科目" class="flex-1 min-w-120" oninput="renderHistory()">
-          <select id="filterSubject" onchange="renderHistory()" class="w-120"><option value="">全部科目</option></select>
+          <input type="text" id="searchInput" placeholder="搜索科目" class="flex-1 min-w-120">
+          <select id="filterSubject" class="w-120"><option value="">全部科目</option></select>
         </div>
         <div class="table-wrap mob-cards"><table><thead><tr><th>日期</th><th>科目</th><th>成绩</th><th>排名</th><th>积分</th><th>操作</th></tr></thead><tbody id="historyTable"></tbody></table><div class="mob-card-list" id="historyMobCards"></div></div>
         <div id="historyEmpty" class="empty hidden">暂无记录</div>
@@ -525,7 +525,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     <div id="sub-trend" class="sub-panel">
       <div class="card">
         <div class="card-title">科目筛选：
-          <select id="trendSubject" onchange="renderTrend()" class="w-140 inline-block"><option value="">全部科目</option></select>
+          <select id="trendSubject" class="w-140 inline-block"><option value="">全部科目</option></select>
         </div>
       </div>
       <div class="card"><div class="card-title">成绩趋势</div><div class="chart-wrap"><canvas id="scoreChart"></canvas></div></div>
@@ -536,8 +536,8 @@ tr:hover td{background:rgba(0,232,255,0.03)}
   <!-- ========== 日常（含子页面：打卡/历史） ========== -->
   <div id="panel-daily" class="panel" role="tabpanel" aria-label="日常">
     <div class="sub-tabs" id="dailySubTabs">
-      <button class="sub-tab active" data-sub="checkin" onclick="switchDailySubTab('checkin',this)">📋 今日打卡</button>
-      <button class="sub-tab" data-sub="dailyHistory" onclick="switchDailySubTab('dailyHistory',this)">📅 历史记录</button>
+      <button class="sub-tab active" data-sub="checkin">📋 今日打卡</button>
+      <button class="sub-tab" data-sub="dailyHistory">📅 历史记录</button>
     </div>
 
     <!-- 子页面：今日打卡 -->
@@ -546,7 +546,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
         <div class="flex-row-center">
           <div class="form-group flex-1 min-w-120 no-margin">
             <label class="text-xs">选择日期</label>
-            <input type="date" id="daily-date" onchange="renderDaily()">
+            <input type="date" id="daily-date">
           </div>
           <div id="dailyDateSummary"></div>
         </div>
@@ -566,13 +566,13 @@ tr:hover td{background:rgba(0,232,255,0.03)}
         <div class="card-title">🌙 就寝时间</div>
         <div id="bedtimeStatus"></div>
         <div class="flex-row">
-          <button class="btn bedtime-btn" id="btn-bed-chat" onclick="bedtimeCheck('chat')">
+          <button class="btn bedtime-btn" id="btn-bed-chat">
             💬 要聊天<br><span class="text-xs">9:10上床 +5分</span>
           </button>
-          <button class="btn bedtime-btn" id="btn-bed-quiet" onclick="bedtimeCheck('quiet')">
+          <button class="btn bedtime-btn" id="btn-bed-quiet">
             🤫 不要聊天<br><span class="text-xs">9:30上床 +5分</span>
           </button>
-          <button class="btn bedtime-btn" id="btn-bed-late" onclick="bedtimeCheck('late')">
+          <button class="btn bedtime-btn" id="btn-bed-late">
             🌙 特殊情况<br><span class="text-xs">11:00上床 +5分</span>
           </button>
         </div>
@@ -585,7 +585,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           <div class="form-group"><label>加分说明</label><input type="text" id="extra-task-desc" placeholder="如：帮忙洗碗、主动浇花"></div>
           <div class="form-group"><label>加分分值</label><input type="number" id="extra-task-pts" min="1" placeholder="如：5" class="w-100"></div>
         </div>
-        <button class="btn btn-primary btn-block" onclick="addExtraTask()">添加加分记录</button>
+        <button class="btn btn-primary btn-block" id="btn-addExtraTask">添加加分记录</button>
         <div id="extraTaskList" class="mt-sm"></div>
       </div>
     </div>
@@ -608,18 +608,18 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     <!-- 周选择器 -->
     <div class="card">
       <div class="flex-between">
-        <button class="btn btn-icon" onclick="changeAdvWeek(-1)" id="advWeekPrev">◀</button>
+        <button class="btn btn-icon" id="advWeekPrev">◀</button>
         <div class="text-center flex-1">
           <div class="text-sm font-medium" id="advWeekTitle">本周进阶挑战</div>
           <div class="text-xs text-secondary" id="advWeekRange"></div>
         </div>
-        <button class="btn btn-icon" onclick="changeAdvWeek(1)" id="advWeekNext">▶</button>
+        <button class="btn btn-icon" id="advWeekNext">▶</button>
       </div>
     </div>
 
     <!-- 分类1：按时完成作业 -->
     <div class="accordion-item">
-      <div class="accordion-header" onclick="toggleAccordion(this)">
+      <div class="accordion-header">
         <span class="accordion-title">📝 按时完成作业</span>
         <span class="accordion-summary" id="advCat1AccSum"></span>
         <span class="accordion-arrow">▼</span>
@@ -634,7 +634,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
 
     <!-- 分类2：自主整理 -->
     <div class="accordion-item">
-      <div class="accordion-header" onclick="toggleAccordion(this)">
+      <div class="accordion-header">
         <span class="accordion-title">🎒 自主整理</span>
         <span class="accordion-summary" id="advCat2AccSum"></span>
         <span class="accordion-arrow">▼</span>
@@ -649,7 +649,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
 
     <!-- 分类3：练书法 -->
     <div class="accordion-item">
-      <div class="accordion-header" onclick="toggleAccordion(this)">
+      <div class="accordion-header">
         <span class="accordion-title">✍️ 练书法</span>
         <span class="accordion-summary" id="advCat3AccSum"></span>
         <span class="accordion-arrow">▼</span>
@@ -664,7 +664,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
 
     <!-- 分类4：计算全对 -->
     <div class="accordion-item">
-      <div class="accordion-header" onclick="toggleAccordion(this)">
+      <div class="accordion-header">
         <span class="accordion-title">🧮 计算全对</span>
         <span class="accordion-summary" id="advCat4AccSum"></span>
         <span class="accordion-arrow">▼</span>
@@ -679,7 +679,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
 
     <!-- 分类5：课外阅读 -->
     <div class="accordion-item">
-      <div class="accordion-header" onclick="toggleAccordion(this)">
+      <div class="accordion-header">
         <span class="accordion-title">📖 课外阅读</span>
         <span class="accordion-summary" id="advCat5AccSum"></span>
         <span class="accordion-arrow">▼</span>
@@ -710,8 +710,8 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     <div class="card">
       <div class="card-title">积分操作</div>
       <div class="pts-toggle">
-        <button class="pts-toggle-btn active" id="ptsToggleAdd" onclick="switchPtsAction('add')">➕ 增加</button>
-        <button class="pts-toggle-btn" id="ptsToggleSpend" onclick="switchPtsAction('spend')">➖ 消费</button>
+        <button class="pts-toggle-btn active" id="ptsToggleAdd">➕ 增加</button>
+        <button class="pts-toggle-btn" id="ptsToggleSpend">➖ 消费</button>
       </div>
       <div id="ptsFormAdd">
         <div class="form-group mb-md"><label>增加积分数量</label><input type="number" id="addAmount" min="1"></div>
@@ -721,7 +721,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           <label class="inline-radio"><input type="radio" name="addPool" value="advanced"> 刷题积分</label>
         </div>
         <div class="form-group mb-md"><label>说明</label><input type="text" id="addNote"></div>
-        <button class="btn btn-primary btn-block" onclick="addPoints()">确认增加</button>
+        <button class="btn btn-primary btn-block" id="btn-addPoints">确认增加</button>
       </div>
       <div id="ptsFormSpend" class="hidden">
         <div class="form-group mb-md"><label>消费积分数量</label><input type="number" id="spendAmount" min="1"></div>
@@ -731,7 +731,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           <label class="inline-radio"><input type="radio" name="spendPool" value="advanced"> 刷题积分</label>
         </div>
         <div class="form-group mb-md"><label>消费说明</label><input type="text" id="spendNote"></div>
-        <button class="btn btn-danger btn-block" onclick="spendPoints()">确认消费</button>
+        <button class="btn btn-danger btn-block" id="btn-spendPoints">确认消费</button>
       </div>
     </div>
     <div id="streakBar" class="streak-bar"></div>
@@ -747,7 +747,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     <div class="card">
       <div class="card-title">👶 孩子配置</div>
       <div class="config-row" style="display:flex;flex-wrap:wrap;gap:8px 12px;margin-bottom:10px"><label style="min-width:50px">名称</label><input type="text" id="cfg-child-name" placeholder="如：小明" style="flex:1;min-width:100px"><label style="min-width:auto;margin-left:4px">年级</label><select id="cfg-child-grade"><option value="1">1年级</option><option value="2">2年级</option><option value="3">3年级</option><option value="4">4年级</option><option value="5">5年级</option><option value="6">6年级</option></select></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-primary" onclick="saveChildNames()">保存名称和年级</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-sm btn-primary" id="btn-saveChildNames">保存名称和年级</button></div>
     </div>
     <div class="card">
       <div class="card-title">📝 积分规则</div>
@@ -756,27 +756,27 @@ tr:hover td{background:rgba(0,232,255,0.03)}
         <div style="flex:1;min-width:100px"><label class="text-sm text-secondary">前3额外</label><input type="number" id="cfg-top3" min="0" style="width:100%"></div>
         <div style="flex:1;min-width:100px"><label class="text-sm text-secondary">连续基数</label><input type="number" id="cfg-streak-base" min="0" style="width:100%"></div>
       </div>
-      <button class="btn btn-sm btn-primary" onclick="saveRules()">保存规则</button>
+      <button class="btn btn-sm btn-primary" id="btn-saveRules">保存规则</button>
     </div>
     <div class="card">
       <div class="card-title">🎯 积分余额调整</div>
-      <div class="config-row-inline"><label>行为积分</label><input type="number" id="cfg-total-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-daily" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" onclick="saveTotalPoints()">保存</button></div>
-      <div class="config-row-inline"><label>刷题积分</label><input type="number" id="cfg-quiz-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-adv" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" onclick="saveQuizPoints()">保存</button></div>
+      <div class="config-row-inline"><label>行为积分</label><input type="number" id="cfg-total-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-daily" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" id="btn-saveTotalPoints">保存</button></div>
+      <div class="config-row-inline"><label>刷题积分</label><input type="number" id="cfg-quiz-pts" min="0"><span class="text-sm text-secondary" id="cfg-curr-adv" style="margin-left:4px">当前: --</span><button class="btn btn-sm btn-primary" id="btn-saveQuizPoints">保存</button></div>
     </div>
     <div class="card">
       <div class="card-title">🌐 跨设备同步</div>
       <p class="text-sm text-secondary mb-md">手机A生成同步码，手机B粘贴同步码，即可同步<strong>当前孩子</strong>的数据</p>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-        <button class="btn btn-sm btn-primary" onclick="generateSyncCode()">生成同步码</button>
-        <button class="btn btn-sm" onclick="importSyncFile()">从文件导入</button>
-        <input type="file" id="syncFileInput" accept=".json,.txt" class="hidden" onchange="doImportSyncFile(event)">
+        <button class="btn btn-sm btn-primary" id="btn-generateSyncCode">生成同步码</button>
+        <button class="btn btn-sm" id="btn-importSyncFile">从文件导入</button>
+        <input type="file" id="syncFileInput" accept=".json,.txt" class="hidden">
       </div>
       <div id="syncCodeArea" class="hidden mb-md">
         <label class="text-sm text-secondary">同步码（在另一部手机上粘贴此码）</label>
         <textarea id="syncCodeText" readonly class="sync-textarea"></textarea>
         <div class="flex-row mt-sm">
-          <button class="btn btn-sm" onclick="copySyncCode()">📋 复制同步码</button>
-          <button class="btn btn-sm" id="btnShowQR" onclick="showSyncQR()">📱 生成二维码</button>
+          <button class="btn btn-sm" id="btn-copySyncCode">📋 复制同步码</button>
+          <button class="btn btn-sm" id="btnShowQR">📱 生成二维码</button>
         </div>
         <div id="syncQRBox" class="hidden mt-md text-center">
           <div id="syncQRCode" class="sync-qr-box"></div>
@@ -786,22 +786,22 @@ tr:hover td{background:rgba(0,232,255,0.03)}
       <div class="mt-md">
         <label class="text-sm text-secondary">粘贴同步码</label>
         <textarea id="importSyncCodeText" placeholder="粘贴同步码..." class="sync-import-textarea"></textarea>
-        <button class="btn btn-primary btn-sm mt-sm w-full" onclick="importSyncCode()">导入同步数据</button>
+        <button class="btn btn-primary btn-sm mt-sm w-full" id="btn-importSyncCode">导入同步数据</button>
       </div>
     </div>
     <div class="card">
       <div class="card-title">📦 数据管理</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
-        <button class="btn btn-sm" onclick="exportJSON()">📥 JSON 备份</button>
-        <button class="btn btn-sm" onclick="exportCSV()">📊 CSV 成绩明细</button>
-        <button class="btn btn-sm" onclick="exportReport()">📄 成绩报告</button>
+        <button class="btn btn-sm" id="btn-exportJSON">📥 JSON 备份</button>
+        <button class="btn btn-sm" id="btn-exportCSV">📊 CSV 成绩明细</button>
+        <button class="btn btn-sm" id="btn-exportReport">📄 成绩报告</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px">
-        <button class="btn btn-sm" onclick="importData()">导入数据</button>
-        <button class="btn btn-sm btn-danger" onclick="clearAllData()">清空数据</button>
+        <button class="btn btn-sm" id="btn-importData">导入数据</button>
+        <button class="btn btn-sm btn-danger" id="btn-clearAllData">清空数据</button>
       </div>
       <p class="text-sm text-muted">JSON 备份可恢复 · 仅操作当前孩子</p>
-      <input type="file" id="importFile" accept=".json" class="hidden" onchange="doImport(event)">
+      <input type="file" id="importFile" accept=".json" class="hidden">
     </div>
   </div>
 </div>
@@ -812,30 +812,30 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     <div class="modal-title" id="confirmTitle">确认操作</div>
     <div class="modal-body" id="confirmBody">确定要执行此操作吗？</div>
     <div class="modal-actions">
-      <button class="btn" id="confirmCancel" onclick="modalResolve(false)">取消</button>
-      <button class="btn btn-danger" id="confirmOk" onclick="modalResolve(true)">确认</button>
+      <button class="btn" id="confirmCancel">取消</button>
+      <button class="btn btn-danger" id="confirmOk">确认</button>
     </div>
   </div>
 </div>
 
 <!-- 手机底部导航 -->
 <nav class="bottom-bar" id="bottomBar" role="tablist" aria-label="主导航">
-  <button class="btab active" data-tab="dashboard" onclick="switchTabMobile('dashboard',this)" role="tab" aria-selected="true" aria-label="总览">
+  <button class="btab active" data-tab="dashboard" role="tab" aria-selected="true" aria-label="总览">
     <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 13h1v7c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-7h1a1 1 0 0 0 .7-1.7l-9-9a1 1 0 0 0-1.4 0l-9 9A1 1 0 0 0 3 13zm9-8.6 6 6V20h-5v-5a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v5H6v-9.6l6-6z" fill="currentColor"/></svg><br>总览
   </button>
-  <button class="btab" data-tab="practice" onclick="switchTabMobile('practice',this)" role="tab" aria-selected="false" aria-label="刷题">
+  <button class="btab" data-tab="practice" role="tab" aria-selected="false" aria-label="刷题">
     <svg viewBox="0 0 24 24" width="22" height="22"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-7-2h2V7h-4v2h2z" fill="currentColor"/></svg><br>刷题
   </button>
-  <button class="btab" data-tab="daily" onclick="switchTabMobile('daily',this)" role="tab" aria-selected="false" aria-label="日常">
+  <button class="btab" data-tab="daily" role="tab" aria-selected="false" aria-label="日常">
     <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/></svg><br>日常
   </button>
-  <button class="btab" data-tab="advanced" onclick="switchTabMobile('advanced',this)" role="tab" aria-selected="false" aria-label="进阶">
+  <button class="btab" data-tab="advanced" role="tab" aria-selected="false" aria-label="进阶">
     <svg viewBox="0 0 24 24" width="22" height="22"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.74 8.87a.48.48 0 0 0 .12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z" fill="currentColor"/></svg><br>进阶
   </button>
-  <button class="btab" data-tab="achievements" onclick="switchTabMobile('achievements',this)" role="tab" aria-selected="false" aria-label="成就">
+  <button class="btab" data-tab="achievements" role="tab" aria-selected="false" aria-label="成就">
     <svg viewBox="0 0 24 24" width="22" height="22"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.82 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z" fill="currentColor"/></svg><br>成就
   </button>
-  <button class="btab" data-tab="points" onclick="switchTabMobile('points',this)" role="tab" aria-selected="false" aria-label="积分">
+  <button class="btab" data-tab="points" role="tab" aria-selected="false" aria-label="积分">
     <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/></svg><br>积分
   </button>
 </nav>
