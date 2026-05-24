@@ -31,6 +31,14 @@ function getCurrentChildGrade() {
 }
 
 /**
+ * 判断刷题模块是否应对当前孩子可见
+ * @returns {boolean} 年级 >= 4 可见，否则隐藏
+ */
+function isPracticeVisible() {
+  return getCurrentChildGrade() >= 4;
+}
+
+/**
  * 保存孩子配置到 localStorage
  * @param {{ name1:string, name2:string, grade1:number, grade2:number }} cfg
  */

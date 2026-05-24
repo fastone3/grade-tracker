@@ -320,6 +320,8 @@ document.getElementById('inp-date').value = AppState.today;
 AppState.dailyDateInput = document.getElementById('daily-date');
 if (AppState.dailyDateInput) AppState.dailyDateInput.value = AppState.today;
 updateChildSwitcherLabels();
+// 初始化时根据年级显隐藏刷题模块
+updatePracticeVisibility();
 checkAutoSettle();
 checkUndoToast();
 renderDashboard();
