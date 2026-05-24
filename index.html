@@ -554,11 +554,12 @@ tr:hover td{background:rgba(0,232,255,0.03)}
     </div>
   </div>
 
-  <!-- ========== 日常（含子页面：打卡/历史） ========== -->
+  <!-- ========== 日常（含子页面：打卡/历史/专注力） ========== -->
   <div id="panel-daily" class="panel" role="tabpanel" aria-label="日常">
     <div class="sub-tabs" id="dailySubTabs">
       <button class="sub-tab active" data-sub="checkin">📋 今日打卡</button>
       <button class="sub-tab" data-sub="dailyHistory">📅 历史记录</button>
+      <button class="sub-tab" data-sub="concentration">🎯 专注力</button>
     </div>
 
     <!-- 子页面：今日打卡 -->
@@ -620,6 +621,26 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           </thead><tbody id="dailyHistoryTable"></tbody>
         </table><div class="mob-card-list" id="dailyHistoryMobCards"></div></div>
         <div id="dailyHistoryEmpty" class="empty hidden">暂无历史记录</div>
+      </div>
+    </div>
+
+    <!-- 子页面：专注力统计 -->
+    <div id="sub-daily-concentration" class="sub-panel">
+      <div class="card">
+        <div class="card-title">🎯 专注力指数统计</div>
+        <div class="metrics" id="concentrationMetrics"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">专注力趋势（近30天）</div>
+        <div class="chart-wrap"><canvas id="concentrationChart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 每日明细</div>
+        <div class="table-wrap mob-cards"><table>
+          <thead><tr><th>日期</th><th>本周</th><th>已完成</th><th>就寝</th><th>扣分</th><th>专注力指数</th></tr>
+          </thead><tbody id="concentrationTable"></tbody>
+        </table><div class="mob-card-list" id="concentrationMobCards"></div></div>
+        <div id="concentrationEmpty" class="empty hidden">暂无打卡记录</div>
       </div>
     </div>
   </div>

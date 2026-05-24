@@ -10,7 +10,7 @@ var CHILDREN_CONFIG_KEY = 'grade_tracker_children_config';
 var AppState = {};
 AppState.currentChild = 1; // 1 或 2
 AppState.currentSubTab = 'record'; // 刷题子页面：record / history / trend / correction
-AppState.currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHistory
+AppState.currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHistory / concentration
 
 /**
  * 读取孩子配置（名称 + 年级）

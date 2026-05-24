@@ -6,8 +6,8 @@
 
 /* ===== 日常任务子标签切换 ===== */
 /**
- * 切换日常模块子面板（打卡/历史），更新 UI 并渲染对应面板
- * @param {string} sub - 'checkin' | 'dailyHistory'
+ * 切换日常模块子面板（打卡/历史/专注力），更新 UI 并渲染对应面板
+ * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration'
  * @param {HTMLElement} el - 被点击的子标签元素
  */
 function switchDailySubTab(sub, el) {
@@ -20,8 +20,12 @@ function switchDailySubTab(sub, el) {
   if (panel) panel.classList.add('active');
   if (sub === 'checkin') renderDaily();
   if (sub === 'dailyHistory') renderDailyHistory();
+  if (sub === 'concentration') renderConcentration();
   window.scrollTo({top:0, behavior:'smooth'});
 }
+
+/* ===== 专注力统计 chart 引用 ===== */
+AppState.concentrationChart = null;
 
 /* ===== 日常任务定义 ===== */
 var DAILY_TASKS = [
@@ -524,4 +528,229 @@ function renderDailyHistory() {
   });
   tbody.innerHTML = html;
   if (mobCards) mobCards.innerHTML = mobHtml;
+}
+
+/* ===== 计算单日专注力指数 ===== */
+/**
+ * 基于日常打卡数据计算单日专注力指数（0-100）
+ * 公式：任务完成率×50 + 就寝打卡×25 + 无扣分奖励×25
+ * - 任务完成率 = 正向完成任务数 / 5
+ * - 就寝打卡 = 有就寝记录则得25分
+ * - 无扣分 = 当日无扣分记录则得25分
+ * @param {string} date - YYYY-MM-DD
+ * @returns {{ score:number, tasksDone:number, bedtime:boolean, hasDeduction:boolean, maxPossible:number }}
+ */
+function calcConcentrationIndex(date) {
+  if (!data.dailyTasks || !data.dailyTasks[date]) {
+    return { score: 0, tasksDone: 0, bedtime: false, hasDeduction: false, maxPossible: 100 };
+  }
+  var dd = data.dailyTasks[date];
+  var tasksDone = 0, hasDeduction = false;
+  Object.keys(dd.tasks).forEach(function(k){
+    var t = dd.tasks[k];
+    if (t && t.done) {
+      if (t.delta > 0) tasksDone++;
+      else if (t.delta < 0) hasDeduction = true;
+    }
+  });
+  var bedtime = !!(dd.bedtime && dd.bedtime.key);
+  var taskScore = (tasksDone / 5) * 50;
+  var bedtimeScore = bedtime ? 25 : 0;
+  var deductionScore = hasDeduction ? 0 : 25;
+  var score = Math.round(taskScore + bedtimeScore + deductionScore);
+  return { score: score, tasksDone: tasksDone, bedtime: bedtime, hasDeduction: hasDeduction, maxPossible: 100 };
+}
+
+/* ===== 计算专注力统计数据 ===== */
+/**
+ * 计算专注力相关统计数据：周/月指数、连续打卡天数、完成率
+ * @returns {{ weekAvg:number, monthAvg:number, streakDays:number, weekCompletion:number, weekDays:number }}
+ */
+function calcConcentrationStats() {
+  if (!data.dailyTasks) data.dailyTasks = {};
+  var dates = Object.keys(data.dailyTasks).sort();
+  if (!dates.length) return { weekAvg: 0, monthAvg: 0, streakDays: 0, weekCompletion: 0, weekDays: 0 };
+
+  var now = new Date();
+  var today = fmtLocalDate(now);
+
+  // 计算本周一和本月1号
+  var dayOfWeek = now.getDay(); // 0=Sun
+  var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  var monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  var weekStart = fmtLocalDate(monday);
+  var monthStart = fmtLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
+
+  var weekScores = [], monthScores = [];
+  var weekTotalTasks = 0, weekDoneTasks = 0;
+
+  dates.forEach(function(date){
+    var idx = calcConcentrationIndex(date);
+    if (date >= weekStart && date <= today) {
+      weekScores.push(idx.score);
+      weekTotalTasks += 5;
+      weekDoneTasks += idx.tasksDone;
+    }
+    if (date >= monthStart && date <= today) {
+      monthScores.push(idx.score);
+    }
+  });
+
+  var weekAvg = weekScores.length > 0 ? Math.round(weekScores.reduce(function(a,b){return a+b;},0) / weekScores.length) : 0;
+  var monthAvg = monthScores.length > 0 ? Math.round(monthScores.reduce(function(a,b){return a+b;},0) / monthScores.length) : 0;
+  var weekCompletion = weekTotalTasks > 0 ? Math.round(weekDoneTasks / weekTotalTasks * 100) : 0;
+
+  // 连续专注天数：从昨天往前数的正向完成天数（正向完成 = 所有5项完成+就寝+无扣分）
+  var streakDays = 0;
+  for (var i = dates.length - 1; i >= 0; i--) {
+    if (dates[i] >= today) continue; // 跳过今天
+    var dIdx = calcConcentrationIndex(dates[i]);
+    // 全部正向完成：5项全完成 + 就寝 + 无扣分
+    if (dIdx.tasksDone === 5 && dIdx.bedtime && !dIdx.hasDeduction) {
+      streakDays++;
+    } else {
+      break;
+    }
+  }
+
+  return { weekAvg: weekAvg, monthAvg: monthAvg, streakDays: streakDays, weekCompletion: weekCompletion, weekDays: weekScores.length };
+}
+
+/* ===== 渲染专注力统计视图 ===== */
+/**
+ * 渲染专注力统计面板：指标卡片 + 趋势图 + 每日明细表
+ * 专注力指数基于 C1 稳定专注力能力设计，适用于所有年级
+ */
+function renderConcentration() {
+  if (!data.dailyTasks) data.dailyTasks = {};
+
+  var stats = calcConcentrationStats();
+  var dates = Object.keys(data.dailyTasks).sort();
+
+  // 指标卡片：4项
+  document.getElementById('concentrationMetrics').innerHTML =
+    '<div class="metric"><div class="metric-label">本周专注力</div><div class="metric-value blue">' + stats.weekAvg + '<span style="font-size:14px;opacity:0.6">/100</span></div></div>' +
+    '<div class="metric"><div class="metric-label">本月专注力</div><div class="metric-value gold">' + stats.monthAvg + '<span style="font-size:14px;opacity:0.6">/100</span></div></div>' +
+    '<div class="metric"><div class="metric-label">连续专注天数</div><div class="metric-value green">' + stats.streakDays + '<span style="font-size:14px;opacity:0.6">天</span></div></div>' +
+    '<div class="metric"><div class="metric-label">本周完成率</div><div class="metric-value" style="color:var(--js-cyan)">' + stats.weekCompletion + '<span style="font-size:14px;opacity:0.6">%</span></div></div>';
+
+  // 每日明细表（按日期降序，显示近30天）
+  var tbody = document.getElementById('concentrationTable');
+  var mobCards = document.getElementById('concentrationMobCards');
+  if (!dates.length) {
+    tbody.innerHTML = '';
+    if (mobCards) mobCards.innerHTML = '';
+    document.getElementById('concentrationEmpty').classList.remove('hidden');
+    renderConcentrationChart([]);
+    return;
+  }
+  document.getElementById('concentrationEmpty').classList.add('hidden');
+
+  var reversed = dates.slice().sort(function(a,b){ return b.localeCompare(a); });
+  var html = '', mobHtml = '';
+  var chartData = []; // 用于图表的数据（按日期升序）
+
+  reversed.forEach(function(date){
+    var d = new Date(date + 'T00:00:00');
+    var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+    var weekStr = weekdays[d.getDay()];
+    var idx = calcConcentrationIndex(date);
+    var taskStr = idx.tasksDone + '/5';
+    var bedStr = idx.bedtime ? '✅' : '❌';
+    var dedStr = idx.hasDeduction ? '<span style="color:var(--js-red)">⚠️</span>' : '✅';
+    var scoreClass = idx.score >= 80 ? 'green' : (idx.score >= 60 ? 'gold' : 'red');
+    html += '<tr>' +
+      '<td style="white-space:nowrap"><strong>' + date + '</strong><br><span style="font-size:11px;color:var(--js-text-secondary)">' + weekStr + '</span></td>' +
+      '<td><span style="font-size:11px;color:var(--js-text-secondary)">' + weekStr + '</span></td>' +
+      '<td><strong>' + taskStr + '</strong></td>' +
+      '<td>' + bedStr + '</td>' +
+      '<td>' + dedStr + '</td>' +
+      '<td><span class="pts-change ' + scoreClass + ' font-mono" style="font-size:14px">' + idx.score + '</span></td>' +
+    '</tr>';
+    mobHtml += '<div class="mob-card"><div class="mob-card-field"><span class="field-label">日期</span><span class="field-value"><strong>' + date + '</strong> ' + weekStr + '</span></div><div class="mob-card-field"><span class="field-label">完成</span><span class="field-value">' + taskStr + '</span></div><div class="mob-card-field"><span class="field-label">就寝</span><span class="field-value">' + bedStr + '</span></div><div class="mob-card-field"><span class="field-label">扣分</span><span class="field-value">' + dedStr + '</span></div><div class="mob-card-field"><span class="field-label">指数</span><span class="field-value pts-change ' + scoreClass + ' font-mono">' + idx.score + '</span></div></div>';
+  });
+  tbody.innerHTML = html;
+  if (mobCards) mobCards.innerHTML = mobHtml;
+
+  // 近30天趋势图（日期升序）
+  var last30Dates = dates.filter(function(d){
+    var now = fmtLocalDate(new Date());
+    return d <= now && d >= fmtLocalDate(new Date(Date.now() - 30 * 86400000));
+  }).sort();
+  renderConcentrationChart(last30Dates);
+}
+
+/* ===== 渲染专注力趋势折线图 ===== */
+/**
+ * 渲染近30天专注力指数趋势折线图
+ * @param {string[]} dateList - 日期数组（已排序）
+ */
+function renderConcentrationChart(dateList) {
+  if (AppState.concentrationChart) AppState.concentrationChart.destroy();
+
+  if (!dateList || !dateList.length) {
+    AppState.concentrationChart = null;
+    return;
+  }
+
+  var labels = [];
+  var scores = [];
+  dateList.forEach(function(date){
+    var d = new Date(date + 'T00:00:00');
+    var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+    var weekStr = weekdays[d.getDay()];
+    labels.push(date + '\n' + weekStr);
+    var idx = calcConcentrationIndex(date);
+    scores.push(idx.score);
+  });
+
+  AppState.concentrationChart = new Chart(document.getElementById('concentrationChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '专注力指数',
+        data: scores,
+        borderColor: '#00e8ff',
+        backgroundColor: 'rgba(0,232,255,0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointBackgroundColor: function(ctx){
+          var v = ctx.dataset.data[ctx.dataIndex];
+          return v >= 80 ? '#22ffb3' : (v >= 60 ? '#fbbf24' : '#ff3860');
+        },
+        pointBorderColor: 'rgba(0,232,255,0.4)',
+        pointHoverBackgroundColor: '#00e8ff',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){ return '专注力指数: ' + ctx.parsed.y + '/100'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: false, color: 'rgba(160,180,210,0.6)' },
+          grid: { color: 'rgba(0,232,255,0.05)' }
+        },
+        y: {
+          min: 0,
+          max: 100,
+          ticks: { color: 'rgba(160,180,210,0.6)' },
+          grid: { color: 'rgba(0,232,255,0.05)' },
+          title: { display: true, text: '专注力指数', color: 'rgba(160,180,210,0.6)' }
+        }
+      }
+    }
+  });
 }

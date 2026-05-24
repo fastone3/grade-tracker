@@ -78,7 +78,12 @@ function switchTabMobile(tab, el) {
 function renderTab(tab) {
   if (tab === 'dashboard') renderDashboard();
   if (tab === 'practice')  { renderTab(AppState.currentSubTab); switchSubTabUI(AppState.currentSubTab); }
-  if (tab === 'daily')     { switchDailySubTabUI(AppState.currentDailySubTab); renderDaily(); }
+  if (tab === 'daily')     {
+    switchDailySubTabUI(AppState.currentDailySubTab);
+    if (AppState.currentDailySubTab === 'checkin') renderDaily();
+    else if (AppState.currentDailySubTab === 'dailyHistory') renderDailyHistory();
+    else if (AppState.currentDailySubTab === 'concentration') renderConcentration();
+  }
   if (tab === 'advanced')  { renderAdvanced(); }
   if (tab === 'points')    renderPoints();
   if (tab === 'achievements') renderAchievementList();
@@ -104,7 +109,11 @@ function refreshCurrentPanel() {
   var panelId = activePanel.id;
   if (panelId === 'panel-dashboard') renderDashboard();
   else if (panelId === 'panel-practice') { renderTab(AppState.currentSubTab); }
-  else if (panelId === 'panel-daily') renderDaily();
+  else if (panelId === 'panel-daily') {
+    if (AppState.currentDailySubTab === 'checkin') renderDaily();
+    else if (AppState.currentDailySubTab === 'dailyHistory') renderDailyHistory();
+    else if (AppState.currentDailySubTab === 'concentration') renderConcentration();
+  }
   else if (panelId === 'panel-points') renderPoints();
   else if (panelId === 'panel-advanced') renderAdvanced();
   else if (panelId === 'panel-achievements') renderAchievementList();
@@ -113,7 +122,7 @@ function refreshCurrentPanel() {
 
 /**
  * 仅更新日常子标签 UI 样式（不触发渲染，用于孩子切换后保持子面板状态）
- * @param {string} sub - 'checkin' | 'dailyHistory'
+ * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration'
  */
 function switchDailySubTabUI(sub) {
   document.querySelectorAll('#dailySubTabs .sub-tab').forEach(function(t){
