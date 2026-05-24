@@ -477,6 +477,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
       <button class="sub-tab active" data-sub="record">📝 录入</button>
       <button class="sub-tab" data-sub="history">📋 记录</button>
       <button class="sub-tab" data-sub="trend">📈 趋势</button>
+      <button class="sub-tab" data-sub="correction">✅ 订正</button>
     </div>
 
     <!-- 子页面：录入 -->
@@ -494,6 +495,9 @@ tr:hover td{background:rgba(0,232,255,0.03)}
         </div>
         <div class="form-row">
           <div class="form-group span-full"><label>备注</label><input type="text" id="inp-note"></div>
+        </div>
+        <div class="form-row" id="wrongCountRow" style="display:none">
+          <div class="form-group"><label>错题数</label><input type="number" id="inp-wrongCount" min="0" placeholder="0（选填）"></div>
         </div>
         <div id="pointsPreview" class="alert alert-success hidden"></div>
         <button class="btn btn-primary btn-block" id="btn-addRecord">确认录入</button>
@@ -516,7 +520,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           <input type="text" id="searchInput" placeholder="搜索科目" class="flex-1 min-w-120">
           <select id="filterSubject" class="w-120"><option value="">全部科目</option></select>
         </div>
-        <div class="table-wrap mob-cards"><table><thead><tr><th>日期</th><th>科目</th><th>成绩</th><th>排名</th><th>积分</th><th>操作</th></tr></thead><tbody id="historyTable"></tbody></table><div class="mob-card-list" id="historyMobCards"></div></div>
+        <div class="table-wrap mob-cards"><table><thead><tr><th>日期</th><th>科目</th><th>成绩</th><th>排名</th><th>错题</th><th>积分</th><th>操作</th></tr></thead><tbody id="historyTable"></tbody></table><div class="mob-card-list" id="historyMobCards"></div></div>
         <div id="historyEmpty" class="empty hidden">暂无记录</div>
       </div>
     </div>
@@ -530,6 +534,23 @@ tr:hover td{background:rgba(0,232,255,0.03)}
       </div>
       <div class="card"><div class="card-title">成绩趋势</div><div class="chart-wrap"><canvas id="scoreChart"></canvas></div></div>
       <div class="card mt-md"><div class="card-title">排名趋势</div><div class="chart-wrap"><canvas id="rankChart"></canvas></div></div>
+    </div>
+
+    <!-- 子页面：订正 -->
+    <div id="sub-correction" class="sub-panel">
+      <div class="card">
+        <div class="card-title">✅ 错题订正率统计</div>
+        <div class="metrics" id="correctionMetrics"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📋 错题订正列表</div>
+        <div class="table-wrap mob-cards"><table><thead><tr><th>日期</th><th>科目</th><th>成绩</th><th>错题</th><th>已订正</th><th>操作</th></tr></thead><tbody id="correctionTable"></tbody></table><div class="mob-card-list" id="correctionMobCards"></div></div>
+        <div id="correctionEmpty" class="empty hidden">暂无错题记录</div>
+      </div>
+      <div class="card">
+        <div class="card-title">📈 订正率趋势</div>
+        <div class="chart-wrap"><canvas id="correctionChart"></canvas></div>
+      </div>
     </div>
   </div>
 

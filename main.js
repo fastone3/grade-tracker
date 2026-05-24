@@ -10,7 +10,8 @@
  */
 
 /* ===== 全局状态 ===== */
-var chartScore = null, chartRank = null;
+AppState.chartScore = null;
+AppState.chartRank = null;
 var data = loadData();
 if (!data.dailyTasks) data.dailyTasks = {};
 
@@ -76,8 +77,8 @@ function switchTabMobile(tab, el) {
  */
 function renderTab(tab) {
   if (tab === 'dashboard') renderDashboard();
-  if (tab === 'practice')  { renderTab(currentSubTab); switchSubTabUI(currentSubTab); }
-  if (tab === 'daily')     { switchDailySubTabUI(currentDailySubTab); renderDaily(); }
+  if (tab === 'practice')  { renderTab(AppState.currentSubTab); switchSubTabUI(AppState.currentSubTab); }
+  if (tab === 'daily')     { switchDailySubTabUI(AppState.currentDailySubTab); renderDaily(); }
   if (tab === 'advanced')  { renderAdvanced(); }
   if (tab === 'points')    renderPoints();
   if (tab === 'achievements') renderAchievementList();
@@ -102,7 +103,7 @@ function refreshCurrentPanel() {
   if (!activePanel) return;
   var panelId = activePanel.id;
   if (panelId === 'panel-dashboard') renderDashboard();
-  else if (panelId === 'panel-practice') { renderTab(currentSubTab); }
+  else if (panelId === 'panel-practice') { renderTab(AppState.currentSubTab); }
   else if (panelId === 'panel-daily') renderDaily();
   else if (panelId === 'panel-points') renderPoints();
   else if (panelId === 'panel-advanced') renderAdvanced();
@@ -126,7 +127,7 @@ function switchDailySubTabUI(sub) {
 
 /**
  * 仅更新刷题子标签 UI 样式（不触发渲染）
- * @param {string} sub - 'record' | 'history' | 'trend'
+ * @param {string} sub - 'record' | 'history' | 'trend' | 'correction'
  */
 function switchSubTabUI(sub) {
   document.querySelectorAll('#practiceSubTabs .sub-tab').forEach(function(t){
@@ -135,7 +136,12 @@ function switchSubTabUI(sub) {
   document.querySelectorAll('#panel-practice .sub-panel').forEach(function(p){ p.classList.remove('active'); });
   var panel = document.getElementById('sub-' + sub);
   if (panel) panel.classList.add('active');
-  if (sub === 'record') renderPracticeStats();
+  if (sub === 'record') {
+    renderPracticeStats();
+    // 年级 >= 4 时显示错题数输入行
+    var wrongRow = document.getElementById('wrongCountRow');
+    if (wrongRow) wrongRow.style.display = getCurrentChildGrade() >= 4 ? 'flex' : 'none';
+  }
 }
 
 
@@ -283,11 +289,11 @@ function bindEventHandlers() {
 
 
 /* ===== 初始化 ===== */
-var today = new Date().toISOString().slice(0,10);
-document.getElementById('inp-date').value = today;
+AppState.today = new Date().toISOString().slice(0,10);
+document.getElementById('inp-date').value = AppState.today;
 // 初始化日常日期
-var dailyDateInput = document.getElementById('daily-date');
-if (dailyDateInput) dailyDateInput.value = today;
+AppState.dailyDateInput = document.getElementById('daily-date');
+if (AppState.dailyDateInput) AppState.dailyDateInput.value = AppState.today;
 updateChildSwitcherLabels();
 checkAutoSettle();
 renderDashboard();

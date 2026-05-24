@@ -11,7 +11,7 @@
  * @param {HTMLElement} el - 被点击的子标签元素
  */
 function switchDailySubTab(sub, el) {
-  currentDailySubTab = sub;
+  AppState.currentDailySubTab = sub;
   document.querySelectorAll('#dailySubTabs .sub-tab').forEach(function(t){ t.classList.remove('active'); });
   if (el) el.classList.add('active');
   document.querySelectorAll('#panel-daily .sub-panel').forEach(function(p){ p.classList.remove('active'); });

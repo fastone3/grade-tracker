@@ -6,7 +6,7 @@
  * 加载顺序：第 4 位（modules.js 之后，main.js 之前）
  */
  /* ===== 进阶页面 ===== */
-var advWeekOffset = 0;
+AppState.advWeekOffset = 0;
 
 /**
  * 获取指定基准日期偏移 N 周后的周一~周日日期列表
@@ -98,9 +98,9 @@ function countStars(dates, getStatusFn, maxDate) {
  */
 function changeAdvWeek(delta) {
   var today = fmtLocalDate(new Date());
-  var newOff = advWeekOffset + delta;
+  var newOff = AppState.advWeekOffset + delta;
   if (newOff > 0) return;
-  advWeekOffset = newOff;
+  AppState.advWeekOffset = newOff;
   renderAdvanced();
 }
 
@@ -164,15 +164,15 @@ function calcSettlement(weekDates, maxDate) {
 function renderAdvanced() {
   if (!data.weeklySettlements) data.weeklySettlements = {};
   var today = fmtLocalDate(new Date());
-  var weekDates = getWeekDates(today, advWeekOffset);
+  var weekDates = getWeekDates(today, AppState.advWeekOffset);
   var weekKey = weekDates[0];
-  var isCurrentWeek = advWeekOffset === 0;
+  var isCurrentWeek = AppState.advWeekOffset === 0;
   var maxDate = isCurrentWeek ? today : weekDates[6];
 
   document.getElementById('advWeekTitle').textContent = isCurrentWeek ? '本周进阶挑战' : '历史周';
   document.getElementById('advWeekRange').textContent = weekDates[0] + ' ~ ' + weekDates[6];
   document.getElementById('advWeekPrev').style.visibility = 'visible';
-  document.getElementById('advWeekNext').style.visibility = advWeekOffset >= 0 ? 'hidden' : 'visible';
+  document.getElementById('advWeekNext').style.visibility = AppState.advWeekOffset >= 0 ? 'hidden' : 'visible';
 
   // 渲染星星
   document.getElementById('advCat1Stars').innerHTML = buildStarHTML(weekDates, function(d) { return getDayMultiStarStatus(d, [1]); }, maxDate);

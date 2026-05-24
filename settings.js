@@ -11,8 +11,8 @@
  */
 function renderSettings() {
   var cfg = getChildrenConfig();
-  var nameKey = currentChild === 1 ? 'name1' : 'name2';
-  var gradeKey = currentChild === 1 ? 'grade1' : 'grade2';
+  var nameKey = AppState.currentChild === 1 ? 'name1' : 'name2';
+  var gradeKey = AppState.currentChild === 1 ? 'grade1' : 'grade2';
   document.getElementById('cfg-child-name').value = cfg[nameKey];
   document.getElementById('cfg-child-grade').value = cfg[gradeKey] || 5;
   document.getElementById('cfg-total-pts').value = data.dailyPoints || 0;
@@ -135,7 +135,7 @@ async function importSyncCode() {
     var d = JSON.parse(json);
     if (!d.records) throw new Error('格式错误');
     var cfg = getChildrenConfig();
-    var childName = currentChild === 1 ? cfg.name1 : cfg.name2;
+    var childName = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
     if (!(await customConfirm('导入将覆盖「' + childName + '」当前数据，确定继续？', '导入确认'))) return;
     data = d;
     saveData(data);
@@ -173,7 +173,7 @@ function doImportSyncFile(e) {
  */
 function exportJSON() {
   var cfg = getChildrenConfig();
-  var childName = (currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
+  var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
   var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
@@ -186,7 +186,7 @@ function exportJSON() {
  */
 function exportCSV() {
   var cfg = getChildrenConfig();
-  var childName = (currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
+  var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
   var records = data.records || [];
   if (records.length === 0) { alert('暂无成绩记录可导出'); return; }
 
@@ -219,7 +219,7 @@ function exportCSV() {
  */
 function exportReport() {
   var cfg = getChildrenConfig();
-  var childName = (currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
+  var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
   var records = data.records || [];
   if (records.length === 0) { alert('暂无成绩记录可生成报告'); return; }
 
@@ -329,7 +329,7 @@ function doImport(e) {
 /* ===== 清空数据 ===== */
 async function clearAllData() {
   var cfg = getChildrenConfig();
-  var childName = currentChild === 1 ? cfg.name1 : cfg.name2;
+  var childName = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
   if (!(await customConfirm('确定清空「' + childName + '」的全部数据？此操作不可撤销！', '清空确认'))) return;
   if (!(await customConfirm('再次确认：将删除「' + childName + '」所有成绩记录和积分数据！', '二次确认'))) return;
   data = getDefaultData();

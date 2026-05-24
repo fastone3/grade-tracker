@@ -74,11 +74,17 @@ function addRecord() {
   }
 
   var id = Date.now().toString();
-  data.records.push({
+  var record = {
     id:id, date:date, subject:subject, score:score,
     rank:rank, total:total, note:note, earnedPts:earnedPts,
     createdAt:new Date().toISOString()
-  });
+  };
+  // 错题数
+  var wrongCount = parseInt(document.getElementById('inp-wrongCount').value);
+  if (wrongCount > 0) {
+    record.wrongAnswers = { total: wrongCount, corrected: 0 };
+  }
+  data.records.push(record);
   data.advancedPoints = (data.advancedPoints || 0) + earnedPts;
   data.totalPoints = (data.dailyPoints || 0) + data.advancedPoints;
   data.pointsLog.push({
@@ -89,7 +95,7 @@ function addRecord() {
   saveData(data);
   checkAchievements();
   showAlert('录入成功！获得 <strong>'+earnedPts+' 刷题积分</strong>，当前刷题积分：<strong>'+data.advancedPoints+'</strong>');
-  ['inp-subject','inp-score','inp-rank','inp-note'].forEach(function(id){
+  ['inp-subject','inp-score','inp-rank','inp-note','inp-wrongCount'].forEach(function(id){
     document.getElementById(id).value = '';
   });
   document.getElementById('inp-date').value = '';
@@ -144,5 +150,26 @@ async function deleteRecord(id) {
   renderHistory();
   renderDashboard();
   renderPracticeStats();
+  renderCorrection();
   showAlert("已删除「" + record.subject + "」，扣减 " + pts + " 积分");
+}
+
+/**
+ * 点击订正一项错题（递增 corrected 计数），完成全部订正时触发成就检查
+ * @param {string} id - 记录 ID
+ */
+function toggleWrongCorrected(id) {
+  var record = data.records.find(function(r){ return r.id === id; });
+  if (!record || !record.wrongAnswers) return;
+  if (record.wrongAnswers.corrected >= record.wrongAnswers.total) return;
+  record.wrongAnswers.corrected++;
+  saveData(data);
+  if (record.wrongAnswers.corrected >= record.wrongAnswers.total) {
+    checkAchievements();
+    showAlert('✅ 「' + record.subject + '」错题已全部订正！');
+  } else {
+    showAlert('已订正 1 项（' + record.wrongAnswers.corrected + '/' + record.wrongAnswers.total + '）');
+  }
+  renderCorrection();
+  renderHistory();
 }

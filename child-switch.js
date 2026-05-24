@@ -9,7 +9,7 @@
  * @param {number} childIndex - 1 或 2
  */
 function switchChild(childIndex) {
-  currentChild = childIndex;
+  AppState.currentChild = childIndex;
   data = loadData();
 
   var btn1 = document.getElementById('hsBtn1');
@@ -33,8 +33,8 @@ function switchChild(childIndex) {
  */
 function updateChildSwitcherLabels() {
   var cfg = getChildrenConfig();
-  var name = currentChild === 1 ? cfg.name1 : cfg.name2;
-  var icon = currentChild === 1 ? '👦' : '👧';
+  var name = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
+  var icon = AppState.currentChild === 1 ? '👦' : '👧';
   document.getElementById('compactTitle').textContent = icon + ' ' + name + ' · 成绩 & 积分';
 }
 
@@ -43,10 +43,10 @@ function updateChildSwitcherLabels() {
  * 保存设置页的孩子名称和年级，刷新 UI 标签和刷题 tab 显隐
  */
 function saveChildNames() {
-  var name = document.getElementById('cfg-child-name').value.trim() || (currentChild === 1 ? '孩子1' : '孩子2');
+  var name = document.getElementById('cfg-child-name').value.trim() || (AppState.currentChild === 1 ? '孩子1' : '孩子2');
   var grade = parseInt(document.getElementById('cfg-child-grade').value) || 5;
   var cfg = getChildrenConfig();
-  if (currentChild === 1) { cfg.name1 = name; cfg.grade1 = grade; }
+  if (AppState.currentChild === 1) { cfg.name1 = name; cfg.grade1 = grade; }
   else { cfg.name2 = name; cfg.grade2 = grade; }
   saveChildrenConfig(cfg);
   updateChildSwitcherLabels();

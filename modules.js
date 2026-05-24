@@ -23,8 +23,8 @@ function getRankBadge(rank) {
  */
 function renderDashboard() {
   var cfg = getChildrenConfig();
-  var name = currentChild === 1 ? cfg.name1 : cfg.name2;
-  var icon = currentChild === 1 ? '👦' : '👧';
+  var name = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
+  var icon = AppState.currentChild === 1 ? '👦' : '👧';
   document.getElementById('compactTitle').textContent = icon + ' ' + name + ' · 成绩 & 积分';
 
   var records = data.records;
@@ -123,11 +123,25 @@ function renderHistory() {
   var html = '';
   var mobHtml = '';
   filtered.forEach(function(r){
-    html += '<tr><td>'+r.date+'</td><td>'+r.subject+'</td><td><strong>'+r.score+'</strong></td><td>'+getRankBadge(r.rank)+'</td><td><span class="pts-change plus font-mono">+'+r.earnedPts+'</span></td><td><button class="btn" style="padding:4px 10px;font-size:12px" onclick="deleteRecord(\''+r.id+'\')">删除</button></td></tr>';
-    mobHtml += '<div class="mob-card"><div class="mob-card-field"><span class="field-label">日期</span><span class="field-value">'+r.date+'</span></div><div class="mob-card-field"><span class="field-label">科目</span><span class="field-value">'+r.subject+'</span></div><div class="mob-card-field"><span class="field-label">成绩</span><span class="field-value font-mono">'+r.score+'</span></div><div class="mob-card-field"><span class="field-label">排名</span><span class="field-value">'+getRankBadge(r.rank)+'</span></div><div class="mob-card-field"><span class="field-label">积分</span><span class="field-value pts-change plus font-mono">+'+r.earnedPts+'</span></div><div class="mob-card-actions"><button class="btn" style="padding:4px 10px;font-size:12px" onclick="deleteRecord(\''+r.id+'\')">删除</button></div></div>';
+    var wrongHtml = getWrongBadgeHtml(r);
+    html += '<tr><td>'+r.date+'</td><td>'+r.subject+'</td><td><strong>'+r.score+'</strong></td><td>'+getRankBadge(r.rank)+'</td><td>'+wrongHtml+'</td><td><span class="pts-change plus font-mono">+'+r.earnedPts+'</span></td><td><button class="btn" style="padding:4px 10px;font-size:12px" onclick="deleteRecord(\''+r.id+'\')">删除</button></td></tr>';
+    mobHtml += '<div class="mob-card"><div class="mob-card-field"><span class="field-label">日期</span><span class="field-value">'+r.date+'</span></div><div class="mob-card-field"><span class="field-label">科目</span><span class="field-value">'+r.subject+'</span></div><div class="mob-card-field"><span class="field-label">成绩</span><span class="field-value font-mono">'+r.score+'</span></div><div class="mob-card-field"><span class="field-label">排名</span><span class="field-value">'+getRankBadge(r.rank)+'</span></div><div class="mob-card-field"><span class="field-label">错题</span><span class="field-value">'+wrongHtml+'</span></div><div class="mob-card-field"><span class="field-label">积分</span><span class="field-value pts-change plus font-mono">+'+r.earnedPts+'</span></div><div class="mob-card-actions"><button class="btn" style="padding:4px 10px;font-size:12px" onclick="deleteRecord(\''+r.id+'\')">删除</button></div></div>';
   });
   tbody.innerHTML = html;
   if (mobCards) mobCards.innerHTML = mobHtml;
+}
+
+/**
+ * 生成错题状态徽章 HTML
+ * @param {object} record - 成绩记录
+ * @returns {string} HTML 字符串
+ */
+function getWrongBadgeHtml(record) {
+  if (!record.wrongAnswers || !record.wrongAnswers.total) return '<span class="badge badge-gray">无错题</span>';
+  var wa = record.wrongAnswers;
+  if (wa.corrected >= wa.total) return '<span class="badge badge-green">' + wa.total + '/' + wa.total + ' ✅</span>';
+  if (wa.corrected > 0) return '<span class="badge badge-blue">' + wa.corrected + '/' + wa.total + ' 订正中</span>';
+  return '<span class="badge badge-red">0/' + wa.total + ' 未订正</span>';
 }
 
 /* ===== 渲染：趋势图 ===== */
@@ -150,10 +164,10 @@ function renderTrend() {
   var scores = filtered.map(function(r){return r.score;});
   var ranks  = filtered.map(function(r){return r.rank;});
 
-  if (chartScore) chartScore.destroy();
-  if (chartRank) chartRank.destroy();
+  if (AppState.chartScore) AppState.chartScore.destroy();
+  if (AppState.chartRank) AppState.chartRank.destroy();
 
-  chartScore = new Chart(document.getElementById('scoreChart'), {
+  AppState.chartScore = new Chart(document.getElementById('scoreChart'), {
     type:'line',
     data:{ labels:labels, datasets:[{ label:'成绩', data:scores,
       borderColor:'#00e8ff', backgroundColor:'rgba(0,232,255,0.08)',
@@ -166,7 +180,7 @@ function renderTrend() {
         y:{beginAtZero:false,ticks:{color:'rgba(160,180,210,0.6)'},
         grid:{color:'rgba(0,232,255,0.05)'}} }}
   });
-  chartRank = new Chart(document.getElementById('rankChart'), {
+  AppState.chartRank = new Chart(document.getElementById('rankChart'), {
     type:'line',
     data:{ labels:labels, datasets:[{ label:'排名', data:ranks,
       borderColor:'#fbbf24', backgroundColor:'rgba(251,191,36,0.08)',
@@ -279,4 +293,144 @@ function spendPoints() {
   document.getElementById('spendNote').value = '';
   showAlert('消费成功！扣除 <strong>'+amount+' '+srcLabel+'</strong>，剩余：<strong>'+data[srcKey]+'</strong>');
   renderPoints();
+}
+
+/* ===== 渲染：订正面板 ===== */
+/**
+ * 错题订正率统计变量
+ */
+AppState.correctionChart = null;
+
+/**
+ * 计算错题订正统计数据
+ * @returns {{ totalWrong:number, corrected:number, uncorrected:number, rate:string }}
+ */
+function calcCorrectionStats() {
+  var totalWrong = 0, corrected = 0;
+  data.records.forEach(function(r){
+    if (r.wrongAnswers && r.wrongAnswers.total > 0) {
+      totalWrong += r.wrongAnswers.total;
+      corrected += r.wrongAnswers.corrected;
+    }
+  });
+  var uncorrected = totalWrong - corrected;
+  var rate = totalWrong > 0 ? (corrected / totalWrong * 100).toFixed(1) : '--';
+  return { totalWrong: totalWrong, corrected: corrected, uncorrected: uncorrected, rate: rate };
+}
+
+/**
+ * 渲染订正面板：指标卡片 + 错题列表 + 趋势图
+ */
+function renderCorrection() {
+  var stats = calcCorrectionStats();
+  // 指标卡片
+  document.getElementById('correctionMetrics').innerHTML =
+    '<div class="metric"><div class="metric-label">总错题数</div><div class="metric-value blue">' + stats.totalWrong + '</div></div>' +
+    '<div class="metric"><div class="metric-label">已订正</div><div class="metric-value green">' + stats.corrected + '</div></div>' +
+    '<div class="metric"><div class="metric-label">未订正</div><div class="metric-value" style="color:var(--js-red)">' + stats.uncorrected + '</div></div>' +
+    '<div class="metric"><div class="metric-label">订正率</div><div class="metric-value gold">' + (stats.rate !== '--' ? stats.rate + '%' : '--') + '</div></div>';
+
+  // 错题记录列表
+  var recordsWithWrong = data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
+  recordsWithWrong.sort(function(a,b){ return b.date.localeCompare(a.date); });
+
+  var tbody = document.getElementById('correctionTable');
+  var mobCards = document.getElementById('correctionMobCards');
+  if (!recordsWithWrong.length) {
+    tbody.innerHTML = '';
+    if (mobCards) mobCards.innerHTML = '';
+    document.getElementById('correctionEmpty').classList.remove('hidden');
+    renderCorrectionChart([]);
+    return;
+  }
+  document.getElementById('correctionEmpty').classList.add('hidden');
+
+  var html = '';
+  var mobHtml = '';
+  recordsWithWrong.forEach(function(r){
+    var wa = r.wrongAnswers;
+    var done = wa.corrected >= wa.total;
+    var actionBtn = done
+      ? '<span class="badge badge-green">✅ 已全部订正</span>'
+      : '<button class="btn" style="padding:4px 10px;font-size:12px" onclick="toggleWrongCorrected(\'' + r.id + '\')">+1 订正</button>';
+    html += '<tr><td>' + r.date + '</td><td>' + r.subject + '</td><td><strong>' + r.score + '</strong></td>' +
+      '<td><span class="badge badge-red">' + wa.total + '</span></td>' +
+      '<td><span class="badge ' + (done ? 'badge-green' : (wa.corrected > 0 ? 'badge-blue' : 'badge-gray')) + '">' + wa.corrected + '/' + wa.total + '</span></td>' +
+      '<td>' + actionBtn + '</td></tr>';
+    mobHtml += '<div class="mob-card"><div class="mob-card-field"><span class="field-label">日期</span><span class="field-value">' + r.date + '</span></div><div class="mob-card-field"><span class="field-label">科目</span><span class="field-value">' + r.subject + '</span></div><div class="mob-card-field"><span class="field-label">成绩</span><span class="field-value font-mono">' + r.score + '</span></div><div class="mob-card-field"><span class="field-label">错题</span><span class="field-value"><span class="badge badge-red">' + wa.total + '</span></span></div><div class="mob-card-field"><span class="field-label">订正</span><span class="field-value"><span class="badge ' + (done ? 'badge-green' : (wa.corrected > 0 ? 'badge-blue' : 'badge-gray')) + '">' + wa.corrected + '/' + wa.total + '</span></span></div><div class="mob-card-actions">' + actionBtn + '</div></div>';
+  });
+  tbody.innerHTML = html;
+  if (mobCards) mobCards.innerHTML = mobHtml;
+
+  // 趋势图
+  renderCorrectionChart(recordsWithWrong);
+}
+
+/**
+ * 渲染订正率趋势折线图
+ * @param {Array} recordsWithWrong - 有错题数据的记录（已按日期排序）
+ */
+function renderCorrectionChart(recordsWithWrong) {
+  if (!recordsWithWrong) {
+    recordsWithWrong = data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
+  }
+  recordsWithWrong.sort(function(a,b){ return a.date.localeCompare(b.date); });
+
+  if (AppState.correctionChart) AppState.correctionChart.destroy();
+
+  if (!recordsWithWrong.length) {
+    AppState.correctionChart = null;
+    return;
+  }
+
+  var labels = recordsWithWrong.map(function(r){ return r.date + '\n' + r.subject; });
+  var rates = recordsWithWrong.map(function(r){
+    return r.wrongAnswers.total > 0 ? (r.wrongAnswers.corrected / r.wrongAnswers.total * 100) : 0;
+  });
+
+  AppState.correctionChart = new Chart(document.getElementById('correctionChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '订正率',
+        data: rates,
+        borderColor: '#22ffb3',
+        backgroundColor: 'rgba(34,255,179,0.08)',
+        borderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 7,
+        pointBackgroundColor: '#22ffb3',
+        pointBorderColor: 'rgba(34,255,179,0.4)',
+        pointHoverBackgroundColor: '#22ffb3',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){ return '订正率: ' + ctx.parsed.y.toFixed(1) + '%'; }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: false, color: 'rgba(160,180,210,0.6)' },
+          grid: { color: 'rgba(0,232,255,0.05)' }
+        },
+        y: {
+          min: 0,
+          max: 100,
+          ticks: { color: 'rgba(160,180,210,0.6)', callback: function(v){ return v + '%'; } },
+          grid: { color: 'rgba(0,232,255,0.05)' },
+          title: { display: true, text: '订正率', color: 'rgba(160,180,210,0.6)' }
+        }
+      }
+    }
+  });
 }

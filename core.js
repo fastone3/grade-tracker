@@ -7,9 +7,10 @@
 
 /* ===== 孩子配置 ===== */
 var CHILDREN_CONFIG_KEY = 'grade_tracker_children_config';
-var currentChild = 1; // 1 或 2
-var currentSubTab = 'record'; // 刷题子页面：record / history / trend
-var currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHistory
+var AppState = {};
+AppState.currentChild = 1; // 1 或 2
+AppState.currentSubTab = 'record'; // 刷题子页面：record / history / trend / correction
+AppState.currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHistory
 
 /**
  * 读取孩子配置（名称 + 年级）
@@ -26,7 +27,7 @@ function getChildrenConfig() {
  */
 function getCurrentChildGrade() {
   var cfg = getChildrenConfig();
-  return currentChild === 1 ? (cfg.grade1 || 5) : (cfg.grade2 || 2);
+  return AppState.currentChild === 1 ? (cfg.grade1 || 5) : (cfg.grade2 || 2);
 }
 
 /**
@@ -52,7 +53,7 @@ function getStorageKey(childIndex) {
  */
 function loadData() {
   try {
-    var d = JSON.parse(localStorage.getItem(getStorageKey(currentChild))) || getDefaultData();
+    var d = JSON.parse(localStorage.getItem(getStorageKey(AppState.currentChild))) || getDefaultData();
     return migrateData(d);
   }
   catch(e) { return getDefaultData(); }
@@ -117,7 +118,7 @@ function getDefaultData() {
  * 持久化数据到 localStorage（当前孩子）
  * @param {object} d - 完整数据对象
  */
-function saveData(d) { localStorage.setItem(getStorageKey(currentChild), JSON.stringify(d)); }
+function saveData(d) { localStorage.setItem(getStorageKey(AppState.currentChild), JSON.stringify(d)); }
 
 /* ===== Chart.js 深色主题全局配置 ===== */
 Chart.defaults.color = 'rgba(160,180,210,0.82)';
@@ -149,12 +150,12 @@ function showAlert(msg, type) {
 
 /* ===== 刷题子标签切换 ===== */
 /**
- * 切换刷题模块子面板（录入/历史/趋势），更新 UI 并渲染对应面板
- * @param {string} sub - 'record' | 'history' | 'trend'
+ * 切换刷题模块子面板（录入/历史/趋势/订正），更新 UI 并渲染对应面板
+ * @param {string} sub - 'record' | 'history' | 'trend' | 'correction'
  * @param {HTMLElement} el - 被点击的子标签元素
  */
 function switchSubTab(sub, el) {
-  currentSubTab = sub;
+  AppState.currentSubTab = sub;
   // 更新子标签样式
   document.querySelectorAll('#practiceSubTabs .sub-tab').forEach(function(t){ t.classList.remove('active'); });
   if (el) el.classList.add('active');
@@ -163,8 +164,9 @@ function switchSubTab(sub, el) {
   var panel = document.getElementById('sub-' + sub);
   if (panel) panel.classList.add('active');
   // 渲染对应子面板
-  if (sub === 'history') renderHistory();
-  if (sub === 'trend')   renderTrend();
+  if (sub === 'history')    renderHistory();
+  if (sub === 'trend')      renderTrend();
+  if (sub === 'correction') renderCorrection();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -182,7 +184,7 @@ function fmtLocalDate(d) {
 }
 
 /* ===== 主题化确认对话框 ===== */
-var _modalResolver = null;
+AppState.modalResolver = null;
 /**
  * 显示科幻风格确认对话框（Promise 化），用于确认删除等危险操作
  * @param {string} message - 提示内容（支持 HTML）
@@ -191,7 +193,7 @@ var _modalResolver = null;
  */
 function customConfirm(message, title) {
   return new Promise(function(resolve) {
-    _modalResolver = resolve;
+    AppState.modalResolver = resolve;
     document.getElementById('confirmTitle').textContent = title || '确认操作';
     document.getElementById('confirmBody').innerHTML = message;
     document.getElementById('confirmModal').classList.add('show');
@@ -204,5 +206,5 @@ function customConfirm(message, title) {
  */
 function modalResolve(result) {
   document.getElementById('confirmModal').classList.remove('show');
-  if (_modalResolver) { _modalResolver(result); _modalResolver = null; }
+  if (AppState.modalResolver) { AppState.modalResolver(result); AppState.modalResolver = null; }
 }
