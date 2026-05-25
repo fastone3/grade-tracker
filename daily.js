@@ -7,7 +7,7 @@
 /* ===== 日常任务子标签切换 ===== */
 /**
  * 切换日常模块子面板（打卡/历史/专注力），更新 UI 并渲染对应面板
- * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration'
+ * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration' | 'reading'
  * @param {HTMLElement} el - 被点击的子标签元素
  */
 function switchDailySubTab(sub, el) {
@@ -21,6 +21,7 @@ function switchDailySubTab(sub, el) {
   if (sub === 'checkin') renderDaily();
   if (sub === 'dailyHistory') renderDailyHistory();
   if (sub === 'concentration') renderConcentration();
+  if (sub === 'reading') renderReading();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -761,6 +762,334 @@ function renderConcentrationChart(dateList) {
   });
 }
 
+/* ===== 阅读打卡 ===== */
+
+/**
+ * 获取某日阅读打卡数据（不存在则返回 null）
+ * @param {string} date - YYYY-MM-DD
+ * @returns {{ duration:number, note:string, ts:string }|null}
+ */
+function getReadingData(date) {
+  if (!AppState.data.dailyTasks || !AppState.data.dailyTasks[date]) return null;
+  return AppState.data.dailyTasks[date].reading || null;
+}
+
+/**
+ * 阅读打卡/更新。给定日期记录阅读时长和内容。
+ * 若已有记录则更新，无则新建。
+ */
+function readingCheckin() {
+  var date = document.getElementById('daily-date').value;
+  if (!date) { showAlert('请先选择日期', 'error'); return; }
+  var duration = parseInt(document.getElementById('readingDuration').value);
+  var note = document.getElementById('readingNote').value.trim();
+  if (!duration || duration < 1) { showAlert('请填写有效的阅读时长（分钟）', 'error'); return; }
+
+  pushUndoSnapshot(data);
+  var dayData = getDayData(date);
+  var prevReading = dayData.reading;
+  dayData.reading = { duration: duration, note: note, ts: new Date().toISOString() };
+  saveData(data);
+  checkAchievements();
+  showAlert('📖 阅读打卡成功！阅读 ' + duration + ' 分钟' + (note ? '（' + note + '）' : ''));
+  renderReading();
+}
+
+/**
+ * 取消阅读打卡（删除当日阅读记录）
+ */
+function readingCancel() {
+  var date = document.getElementById('daily-date').value;
+  if (!date) return;
+  var dayData = getDayData(date);
+  if (!dayData.reading) return;
+  pushUndoSnapshot(data);
+  delete dayData.reading;
+  saveData(data);
+  showAlert('阅读打卡已取消');
+  renderReading();
+}
+
+/* ===== 计算阅读统计数据 ===== */
+
+/**
+ * 计算阅读相关统计数据：本周累计/日均/本月累计
+ * @returns {{ weekTotal:number, weekAvg:number, weekDays:number, monthTotal:number, monthDays:number, monthAvg:number, todayDuration:number }}
+ */
+function calcReadingStats() {
+  if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
+  var dates = Object.keys(AppState.data.dailyTasks).sort();
+  if (!dates.length) return { weekTotal: 0, weekAvg: 0, weekDays: 0, monthTotal: 0, monthDays: 0, monthAvg: 0, todayDuration: 0 };
+
+  var now = new Date();
+  var today = fmtLocalDate(now);
+
+  // 本周一和本月1号
+  var dayOfWeek = now.getDay();
+  var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  var monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  var weekStart = fmtLocalDate(monday);
+  var monthStart = fmtLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
+
+  var weekTotal = 0, weekDays = 0;
+  var monthTotal = 0, monthDays = 0;
+  var todayDuration = 0;
+
+  dates.forEach(function(date){
+    var reading = getReadingData(date);
+    if (!reading) return;
+    if (date === today) todayDuration = reading.duration;
+    if (date >= weekStart && date <= today) {
+      weekTotal += reading.duration;
+      weekDays++;
+    }
+    if (date >= monthStart && date <= today) {
+      monthTotal += reading.duration;
+      monthDays++;
+    }
+  });
+
+  var weekAvg = weekDays > 0 ? Math.round(weekTotal / weekDays) : 0;
+  var monthAvg = monthDays > 0 ? Math.round(monthTotal / monthDays) : 0;
+
+  return { weekTotal: weekTotal, weekAvg: weekAvg, weekDays: weekDays, monthTotal: monthTotal, monthDays: monthDays, monthAvg: monthAvg, todayDuration: todayDuration };
+}
+
+/* ===== 渲染阅读打卡面板 ===== */
+
+/**
+ * 渲染阅读打卡面板：今日打卡表单状态 + 统计指标 + 本周明细
+ */
+function renderReading() {
+  var date = document.getElementById('daily-date').value;
+  if (!date) {
+    var today = fmtLocalDate(new Date());
+    document.getElementById('daily-date').value = today;
+    date = today;
+  }
+
+  var reading = getReadingData(date);
+
+  // 表单状态
+  var durInput = document.getElementById('readingDuration');
+  var noteInput = document.getElementById('readingNote');
+  var checkinBtn = document.getElementById('btnReadingCheckin');
+  var cancelBtn = document.getElementById('btnReadingCancel');
+  var statusDiv = document.getElementById('readingStatus');
+
+  if (reading) {
+    durInput.value = reading.duration;
+    noteInput.value = reading.note || '';
+    durInput.disabled = true;
+    noteInput.disabled = true;
+    checkinBtn.style.display = 'none';
+    cancelBtn.style.display = '';
+    statusDiv.innerHTML = '✅ 今日已打卡 &nbsp;|&nbsp; 阅读 <strong>' + reading.duration + '</strong> 分钟' +
+      (reading.note ? '（' + reading.note + '）' : '');
+  } else {
+    durInput.value = '';
+    noteInput.value = '';
+    durInput.disabled = false;
+    noteInput.disabled = false;
+    checkinBtn.style.display = '';
+    cancelBtn.style.display = 'none';
+    statusDiv.innerHTML = '今日还未阅读打卡，请填写阅读时长后点击打卡';
+  }
+
+  // 统计指标 + 连续打卡天数
+  var stats = calcReadingStats();
+  var streakDays = calcConsecutiveReadingDays();
+  document.getElementById('readingMetrics').innerHTML =
+    '<div class="metric"><div class="metric-label">本周累计</div><div class="metric-value blue">' + stats.weekTotal + '<span style="font-size:14px;opacity:0.6">分钟</span></div></div>' +
+    '<div class="metric"><div class="metric-label">本周日均</div><div class="metric-value green">' + stats.weekAvg + '<span style="font-size:14px;opacity:0.6">分钟</span></div></div>' +
+    '<div class="metric"><div class="metric-label">本周天数</div><div class="metric-value gold">' + stats.weekDays + '<span style="font-size:14px;opacity:0.6">天</span></div></div>' +
+    '<div class="metric"><div class="metric-label">连续打卡</div><div class="metric-value" style="color:var(--js-cyan)">' + streakDays + '<span style="font-size:14px;opacity:0.6">天</span></div></div>';
+
+  // 本周明细表
+  var now = new Date();
+  var dayOfWeek = now.getDay();
+  var mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  var monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  var weekStart = fmtLocalDate(monday);
+  var today = fmtLocalDate(now);
+
+  var weekDates = Object.keys(AppState.data.dailyTasks || {}).filter(function(d){
+    return d >= weekStart && d <= today;
+  }).sort(function(a,b){ return b.localeCompare(a); });
+
+  var tbody = document.getElementById('readingTable');
+  var mobCards = document.getElementById('readingMobCards');
+  var emptyDiv = document.getElementById('readingEmpty');
+
+  var html = '', mobHtml = '';
+  var hasData = false;
+
+  weekDates.forEach(function(date){
+    var rd = getReadingData(date);
+    if (!rd) return;
+    hasData = true;
+    var d = new Date(date + 'T00:00:00');
+    var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+    var weekStr = weekdays[d.getDay()];
+    var noteStr = rd.note || '--';
+    html += '<tr><td><strong>' + date + '</strong><br><span style="font-size:11px;color:var(--js-text-secondary)">' + weekStr + '</span></td>' +
+      '<td><span class="pts-change plus font-mono">' + rd.duration + '<span style="font-size:11px;opacity:0.6">分钟</span></span></td>' +
+      '<td style="font-size:12px;color:var(--js-text-secondary)">' + noteStr + '</td></tr>';
+    mobHtml += '<div class="mob-card"><div class="mob-card-field"><span class="field-label">日期</span><span class="field-value"><strong>' + date + '</strong> ' + weekStr + '</span></div><div class="mob-card-field"><span class="field-label">时长</span><span class="field-value pts-change plus font-mono">' + rd.duration + '分钟</span></div><div class="mob-card-field"><span class="field-label">内容</span><span class="field-value" style="font-size:12px;color:var(--js-text-secondary)">' + noteStr + '</span></div></div>';
+  });
+
+  if (hasData) {
+    tbody.innerHTML = html;
+    if (mobCards) mobCards.innerHTML = mobHtml;
+    emptyDiv.classList.add('hidden');
+  } else {
+    tbody.innerHTML = '';
+    if (mobCards) mobCards.innerHTML = '';
+    emptyDiv.classList.remove('hidden');
+  }
+
+  renderReadingChart(); // 渲染近30天趋势图
+}
+
+/**
+ * 连续阅读打卡天数（从昨天往前数，今天是当天不纳入连续判断）
+ * @returns {number}
+ */
+function calcConsecutiveReadingDays() {
+  if (!AppState.data.dailyTasks) return 0;
+  var dates = Object.keys(AppState.data.dailyTasks).sort();
+  if (!dates.length) return 0;
+
+  var today = fmtLocalDate(new Date());
+  // 从昨天开始往前计连续
+  var count = 0;
+  // 检查今天是否有阅读
+  var todayReading = getReadingData(today);
+  // 从昨天开始往前数
+  for (var ci = dates.length - 1; ci >= 0; ci--) {
+    var date = dates[ci];
+    if (date === today) continue; // 跳过今天
+    if (date >= today) continue; // 跳过未来日期
+    var rd = getReadingData(date);
+    if (!rd) break;
+    // 检查日期连续性
+    if (count > 0) {
+      var prevDate = dates[ci + 1];
+      if (prevDate === today) {
+        // 昨天是今天的前一天
+        var expected = new Date(today);
+        expected.setDate(expected.getDate() - 1);
+        var expectedStr = fmtLocalDate(expected);
+        if (date !== expectedStr) break;
+      } else {
+        var d1 = new Date(date + 'T00:00:00');
+        var d2 = new Date(prevDate + 'T00:00:00');
+        if (Math.abs((d2 - d1) / 86400000 - 1) > 0.1) break;
+      }
+    }
+    count++;
+  }
+
+  return count;
+}
+
+/* ===== 阅读趋势图 ===== */
+
+/**
+ * 渲染阅读时长趋势图（最近30天折线图）
+ */
+function renderReadingChart() {
+  if (AppState.readingChart) AppState.readingChart.destroy();
+
+  if (!AppState.data.dailyTasks) { AppState.readingChart = null; return; }
+
+  var dates = Object.keys(AppState.data.dailyTasks).sort();
+  if (!dates.length) { AppState.readingChart = null; return; }
+
+  var now = new Date();
+  var last30Dates = [];
+  for (var ri = 29; ri >= 0; ri--) {
+    var d = new Date(now);
+    d.setDate(now.getDate() - ri);
+    last30Dates.push(fmtLocalDate(d));
+  }
+
+  var labels = [];
+  var durations = [];
+  var hasData = false;
+  last30Dates.forEach(function(date){
+    var d = new Date(date + 'T00:00:00');
+    var weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+    var weekStr = weekdays[d.getDay()];
+    var rd = getReadingData(date);
+    var dur = rd ? rd.duration : 0;
+    if (dur > 0) hasData = true;
+    labels.push(date.substr(5) + '\n' + weekStr);
+    durations.push(dur);
+  });
+
+  if (!hasData) {
+    AppState.readingChart = null;
+    return;
+  }
+
+  AppState.readingChart = new Chart(document.getElementById('readingChart'), {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: '阅读时长（分钟）',
+        data: durations,
+        borderColor: '#fbbf24',
+        backgroundColor: 'rgba(251,191,36,0.08)',
+        borderWidth: 2,
+        pointRadius: function(ctx){
+          var v = ctx.dataset.data[ctx.dataIndex];
+          return v > 0 ? 4 : 0;
+        },
+        pointHoverRadius: 7,
+        pointBackgroundColor: function(ctx){
+          var v = ctx.dataset.data[ctx.dataIndex];
+          if (v === 0) return 'transparent';
+          return v >= 30 ? '#22ffb3' : (v >= 15 ? '#fbbf24' : '#ff3860');
+        },
+        pointBorderColor: 'rgba(251,191,36,0.3)',
+        fill: true,
+        tension: 0.3
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(ctx){
+              var v = ctx.parsed.y;
+              return v > 0 ? '阅读时长: ' + v + ' 分钟' : '无记录';
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { font: { size: 10 }, maxRotation: 45, autoSkip: true, autoSkipPadding: 3, color: 'rgba(160,180,210,0.6)' },
+          grid: { color: 'rgba(251,191,36,0.05)' }
+        },
+        y: {
+          beginAtZero: true,
+          ticks: { color: 'rgba(160,180,210,0.6)' },
+          grid: { color: 'rgba(251,191,36,0.05)' },
+          title: { display: true, text: '分钟', color: 'rgba(160,180,210,0.6)' }
+        }
+      }
+    }
+  });
+}
+
 /* ===== 注册到 AppState 命名空间 ===== */
 AppState.switchDailySubTab = switchDailySubTab;
 AppState.getDayData = getDayData;
@@ -779,3 +1108,10 @@ AppState.calcConcentrationIndex = calcConcentrationIndex;
 AppState.calcConcentrationStats = calcConcentrationStats;
 AppState.renderConcentration = renderConcentration;
 AppState.renderConcentrationChart = renderConcentrationChart;
+AppState.getReadingData = getReadingData;
+AppState.readingCheckin = readingCheckin;
+AppState.readingCancel = readingCancel;
+AppState.calcReadingStats = calcReadingStats;
+AppState.renderReading = renderReading;
+AppState.calcConsecutiveReadingDays = calcConsecutiveReadingDays;
+AppState.renderReadingChart = renderReadingChart;

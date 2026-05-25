@@ -84,6 +84,7 @@ function renderTab(tab) {
     if (AppState.currentDailySubTab === 'checkin') renderDaily();
     else if (AppState.currentDailySubTab === 'dailyHistory') renderDailyHistory();
     else if (AppState.currentDailySubTab === 'concentration') renderConcentration();
+    else if (AppState.currentDailySubTab === 'reading') renderReading();
   }
   if (tab === 'advanced')  { renderAdvanced(); }
   if (tab === 'points')    renderPoints();
@@ -114,6 +115,7 @@ function refreshCurrentPanel() {
     if (AppState.currentDailySubTab === 'checkin') renderDaily();
     else if (AppState.currentDailySubTab === 'dailyHistory') renderDailyHistory();
     else if (AppState.currentDailySubTab === 'concentration') renderConcentration();
+    else if (AppState.currentDailySubTab === 'reading') renderReading();
   }
   else if (panelId === 'panel-points') renderPoints();
   else if (panelId === 'panel-advanced') renderAdvanced();
@@ -124,7 +126,7 @@ function refreshCurrentPanel() {
 
 /**
  * 仅更新日常子标签 UI 样式（不触发渲染，用于孩子切换后保持子面板状态）
- * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration'
+ * @param {string} sub - 'checkin' | 'dailyHistory' | 'concentration' | 'reading' | 'reading'
  */
 function switchDailySubTabUI(sub) {
   document.querySelectorAll('#dailySubTabs .sub-tab').forEach(function(t){
@@ -193,6 +195,12 @@ function bindEventHandlers() {
     var sub = dst.dataset.sub;
     dst.addEventListener('click', function(){ switchDailySubTab(sub, dst); });
   });
+
+  /* ---- 阅读打卡 ---- */
+  var readingCheckinBtn = document.getElementById('btnReadingCheckin');
+  if (readingCheckinBtn) readingCheckinBtn.addEventListener('click', function(){ readingCheckin(); });
+  var readingCancelBtn = document.getElementById('btnReadingCancel');
+  if (readingCancelBtn) readingCancelBtn.addEventListener('click', function(){ readingCancel(); });
 
   /* ---- 日常日期变更 ---- */
   var dd = document.getElementById('daily-date');

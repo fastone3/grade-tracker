@@ -21,6 +21,16 @@ AppState.ACHIEVEMENTS = [
   // 周满勤 C4
   { id:'A06', name:'周满勤', desc:'本周7天全部完成打卡', icon:'📅', cap:'C4', color:'#00e8ff', tier:'rare', grades:[1,2,3], group:'habit', conditionType:'weekFullCheckin' },
 
+  // ———— 阅读成就 C2 ————
+  // 阅读小芽 C2
+  { id:'A07', name:'阅读小芽', desc:'连续7天阅读打卡', icon:'🌱', cap:'C2', color:'#22ffb3', tier:'common', grades:[1,2,3,4,5,6], group:'habit', conditionType:'consecutiveReadingDays', conditionValue:7 },
+  // 阅读之星 C2
+  { id:'A08', name:'阅读之星', desc:'连续21天阅读打卡', icon:'⭐', cap:'C2', color:'#22ffb3', tier:'rare', grades:[1,2,3,4,5,6], group:'habit', conditionType:'consecutiveReadingDays', conditionValue:21 },
+  // 阅读大师 C2
+  { id:'A09', name:'阅读大师', desc:'连续60天阅读打卡', icon:'👑', cap:'C2', color:'#00e8ff', tier:'legendary', grades:[1,2,3,4,5,6], group:'habit', conditionType:'consecutiveReadingDays', conditionValue:60 },
+  // 阅读达人 C2
+  { id:'A10', name:'阅读达人', desc:'累计30天阅读打卡', icon:'📚', cap:'C2', color:'#fbbf24', tier:'common', grades:[1,2,3,4,5,6], group:'habit', conditionType:'totalReadingDays', conditionValue:30 },
+
   // ———— 高年级段（4-6年级，学习进阶） ————
   // 审题起手 C5
   { id:'B01', name:'审题起手', desc:'单科目连续3次获得前3名', icon:'🖊️', cap:'C5', color:'#fbbf24', tier:'common', grades:[4,5,6], group:'advance', conditionType:'subjectConsecutiveTop3', conditionValue:3 },
@@ -95,6 +105,37 @@ function getAchievementProgress(a) {
     }
     return count;
   }
+  if (a.conditionType === 'consecutiveReadingDays') {
+    var allDates = Object.keys(dailies).sort();
+    var today = fmtLocalDate(new Date());
+    var crCount = 0;
+    for (var cri = allDates.length - 1; cri >= 0; cri--) {
+      var cd = allDates[cri];
+      if (cd === today) continue;
+      if (cd > today) continue;
+      var rd = dailies[cd] && dailies[cd].reading ? dailies[cd].reading : null;
+      if (!rd) break;
+      if (crCount > 0) {
+        var prevDate = allDates[cri + 1];
+        if (prevDate === today) {
+          var expected = new Date(today); expected.setDate(expected.getDate() - 1);
+          if (cd !== fmtLocalDate(expected)) break;
+        } else {
+          var d1 = new Date(cd + 'T00:00:00'), d2 = new Date(prevDate + 'T00:00:00');
+          if (Math.abs((d2 - d1) / 86400000 - 1) > 0.1) break;
+        }
+      }
+      crCount++;
+    }
+    return crCount;
+  }
+  if (a.conditionType === 'totalReadingDays') {
+    var trCount = 0;
+    Object.keys(dailies).forEach(function(dk) {
+      if (dailies[dk] && dailies[dk].reading && dailies[dk].reading.duration > 0) trCount++;
+    });
+    return trCount;
+  }
   if (a.conditionType === 'totalCheckins') {
     var sum = 0;
     Object.keys(dailies).forEach(function(dk) {
@@ -125,6 +166,7 @@ function getAchievementProgress(a) {
 
 function getAchievementTotal(a) {
   if (a.conditionType === 'consecutiveCheckinDays' || a.conditionType === 'totalCheckins' || a.conditionType === 'subjectCumulativeTop3' || a.conditionType === 'consecutiveTop3' || a.conditionType === 'totalUnlocked' || a.conditionType === 'allUnlocked') return a.conditionValue || 1;
+  if (a.conditionType === 'consecutiveReadingDays' || a.conditionType === 'totalReadingDays') return a.conditionValue || 1;
   if (a.conditionType === 'subjectConsecutiveTop3') return a.conditionValue || 3;
   if (a.conditionType === 'weekFullCheckin') return 7;
   if (a.conditionType === 'allSubjectTop3') { var s = {}; (AppState.data.records||[]).forEach(function(r){ s[r.subject]=true; }); return Math.max(Object.keys(s).length,1); }

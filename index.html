@@ -561,6 +561,7 @@ tr:hover td{background:rgba(0,232,255,0.03)}
       <button class="sub-tab active" data-sub="checkin">📋 今日打卡</button>
       <button class="sub-tab" data-sub="dailyHistory">📅 历史记录</button>
       <button class="sub-tab" data-sub="concentration">🎯 专注力</button>
+      <button class="sub-tab" data-sub="reading">📖 阅读打卡</button>
     </div>
 
     <!-- 子页面：今日打卡 -->
@@ -642,6 +643,44 @@ tr:hover td{background:rgba(0,232,255,0.03)}
           </thead><tbody id="concentrationTable"></tbody>
         </table><div class="mob-card-list" id="concentrationMobCards"></div></div>
         <div id="concentrationEmpty" class="empty hidden">暂无打卡记录</div>
+      </div>
+    </div>
+
+    <!-- 子页面：阅读打卡 -->
+    <div id="sub-daily-reading" class="sub-panel">
+      <div class="card">
+        <div class="card-title">📖 今日阅读打卡</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>阅读时长（分钟）</label>
+            <input type="number" id="readingDuration" min="0" placeholder="如：20">
+          </div>
+          <div class="form-group">
+            <label>阅读内容（选填）</label>
+            <input type="text" id="readingNote" placeholder="如：《西游记》">
+          </div>
+        </div>
+        <div class="flex-row">
+          <button class="btn btn-primary" id="btnReadingCheckin">📖 打卡</button>
+          <button class="btn" id="btnReadingCancel" style="display:none">取消打卡</button>
+        </div>
+        <div id="readingStatus" class="mt-sm text-sm text-secondary"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 今日阅读统计</div>
+        <div class="metrics" id="readingMetrics"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">📅 本周阅读明细</div>
+        <div class="table-wrap mob-cards"><table>
+          <thead><tr><th>日期</th><th>时长</th><th>内容</th></tr></thead>
+          <tbody id="readingTable"></tbody>
+        </table><div class="mob-card-list" id="readingMobCards"></div></div>
+        <div id="readingEmpty" class="empty hidden">本周暂无阅读记录</div>
+      </div>
+      <div class="card mt-md">
+        <div class="card-title">📈 阅读趋势（近30天）</div>
+        <div class="chart-wrap"><canvas id="readingChart"></canvas></div>
       </div>
     </div>
   </div>
