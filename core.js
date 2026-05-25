@@ -6,8 +6,8 @@
  */
 
 /* ===== 孩子配置 ===== */
-var CHILDREN_CONFIG_KEY = 'grade_tracker_children_config';
 var AppState = {};
+AppState.CHILDREN_CONFIG_KEY = 'grade_tracker_children_config';
 AppState.currentChild = 1; // 1 或 2
 AppState.currentSubTab = 'record'; // 刷题子页面：record / history / trend / correction
 AppState.currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHistory / concentration
@@ -17,7 +17,7 @@ AppState.currentDailySubTab = 'checkin'; // 日常子页面：checkin / dailyHis
  * @returns {{ name1:string, name2:string, grade1:number, grade2:number }} 配置对象
  */
 function getChildrenConfig() {
-  try { return JSON.parse(localStorage.getItem(CHILDREN_CONFIG_KEY)) || { name1:'饶梓铭', name2:'饶思微', grade1:5, grade2:2 }; }
+  try { return JSON.parse(localStorage.getItem(AppState.CHILDREN_CONFIG_KEY)) || { name1:'饶梓铭', name2:'饶思微', grade1:5, grade2:2 }; }
   catch(e) { return { name1:'饶梓铭', name2:'饶思微', grade1:5, grade2:2 }; }
 }
 
@@ -42,7 +42,7 @@ function isPracticeVisible() {
  * 保存孩子配置到 localStorage
  * @param {{ name1:string, name2:string, grade1:number, grade2:number }} cfg
  */
-function saveChildrenConfig(cfg) { localStorage.setItem(CHILDREN_CONFIG_KEY, JSON.stringify(cfg)); }
+function saveChildrenConfig(cfg) { localStorage.setItem(AppState.CHILDREN_CONFIG_KEY, JSON.stringify(cfg)); }
 
 /**
  * 生成指定孩子的 localStorage 存储键
@@ -130,7 +130,7 @@ function getDefaultData() {
 function saveData(d) { localStorage.setItem(getStorageKey(AppState.currentChild), JSON.stringify(d)); }
 
 /* ===== 撤销操作 ===== */
-var MAX_UNDO_SIZE = 10;
+AppState.MAX_UNDO_SIZE = 10;
 
 /**
  * 在当前数据变更前保存快照（push 到 undoStack）
@@ -144,7 +144,7 @@ function pushUndoSnapshot(data) {
   // 防止快照间互相引用 undoStack — 每个快照独立
   data.undoStack.push(snapshot);
   // 超出上限 → 移除最早的快照
-  if (data.undoStack.length > MAX_UNDO_SIZE) {
+  if (data.undoStack.length > AppState.MAX_UNDO_SIZE) {
     data.undoStack.shift();
   }
 }
@@ -276,3 +276,23 @@ function modalResolve(result) {
   document.getElementById('confirmModal').classList.remove('show');
   if (AppState.modalResolver) { AppState.modalResolver(result); AppState.modalResolver = null; }
 }
+
+/* ===== AppState 命名空间注册（R11 Phase2） ===== */
+AppState.getChildrenConfig = getChildrenConfig;
+AppState.getCurrentChildGrade = getCurrentChildGrade;
+AppState.isPracticeVisible = isPracticeVisible;
+AppState.saveChildrenConfig = saveChildrenConfig;
+AppState.getStorageKey = getStorageKey;
+AppState.loadData = loadData;
+AppState.migrateData = migrateData;
+AppState.inferPool = inferPool;
+AppState.getDefaultData = getDefaultData;
+AppState.saveData = saveData;
+AppState.pushUndoSnapshot = pushUndoSnapshot;
+AppState.undoLastOperation = undoLastOperation;
+AppState.checkUndoToast = checkUndoToast;
+AppState.showAlert = showAlert;
+AppState.switchSubTab = switchSubTab;
+AppState.fmtLocalDate = fmtLocalDate;
+AppState.customConfirm = customConfirm;
+AppState.modalResolve = modalResolve;

@@ -37,8 +37,8 @@ function getWeekDates(baseDate, offset) {
  * @returns {'green'|'red'|'none'} 有加分→绿，有扣分→红，无记录→灰
  */
 function getDayMultiStarStatus(dateStr, taskIds) {
-  if (!data.dailyTasks || !data.dailyTasks[dateStr]) return 'none';
-  var dd = data.dailyTasks[dateStr];
+  if (!AppState.data.dailyTasks || !AppState.data.dailyTasks[dateStr]) return 'none';
+  var dd = AppState.data.dailyTasks[dateStr];
   var hasGreen = false, hasRed = false;
   taskIds.forEach(function(tid) {
     var t = dd.tasks[tid];
@@ -162,7 +162,7 @@ function calcSettlement(weekDates, maxDate) {
  * 渲染进阶页面（5类周挑战 + 星星 + 结算区域 + 历史）
  */
 function renderAdvanced() {
-  if (!data.weeklySettlements) data.weeklySettlements = {};
+  if (!AppState.data.weeklySettlements) AppState.data.weeklySettlements = {};
   var today = fmtLocalDate(new Date());
   var weekDates = getWeekDates(today, AppState.advWeekOffset);
   var weekKey = weekDates[0];
@@ -209,7 +209,7 @@ function renderAdvanced() {
   if (acc5) acc5.innerHTML = accSummaryHTML(st.cat5);
 
   // 结算区域
-  var settled = data.weeklySettlements[weekKey];
+  var settled = AppState.data.weeklySettlements[weekKey];
   var todayDow = new Date(today + 'T00:00:00').getDay();
   var isSunday = todayDow === 0;
   var area = document.getElementById('advSettleArea');
@@ -251,8 +251,8 @@ async function doSettleWeek() {
 
   var weekDates = getWeekDates(today, 0);
   var weekKey = weekDates[0];
-  if (!data.weeklySettlements) data.weeklySettlements = {};
-  if (data.weeklySettlements[weekKey]) { showAlert('本周已结算！', 'error'); return; }
+  if (!AppState.data.weeklySettlements) AppState.data.weeklySettlements = {};
+  if (AppState.data.weeklySettlements[weekKey]) { showAlert('本周已结算！', 'error'); return; }
 
   var st = calcSettlement(weekDates, today);
   var total = st.total;
@@ -261,8 +261,8 @@ async function doSettleWeek() {
     if (!(await customConfirm('本周刷题积分为0，确认结算吗？', '结算确认'))) return;
   }
 
-  data.advancedPoints = (data.advancedPoints || 0) + total;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+  AppState.data.advancedPoints = (AppState.data.advancedPoints || 0) + total;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
 
   var logDesc = '进阶结算（' + weekDates[0] + '~' + weekDates[6] + '）：';
   var parts = [];
@@ -273,18 +273,18 @@ async function doSettleWeek() {
   if (st.cat5.pts !== 0) parts.push('阅读' + (st.cat5.pts > 0 ? '+' : '') + st.cat5.pts);
   logDesc += parts.length ? parts.join('，') : '无达标奖励';
 
-  data.pointsLog.push({
+  AppState.data.pointsLog.push({
     id: Date.now().toString() + 'w',
     time: new Date().toISOString(),
     type: total >= 0 ? 'earn' : 'spend',
     delta: total,
-    balance: data.advancedPoints,
+    balance: AppState.data.advancedPoints,
     pool: 'advanced',
     desc: logDesc,
     _weeklySettle: weekKey
   });
 
-  data.weeklySettlements[weekKey] = {
+  AppState.data.weeklySettlements[weekKey] = {
     time: new Date().toLocaleString('zh-CN'),
     totalPts: total,
     auto: false,
@@ -307,19 +307,19 @@ async function doSettleWeek() {
  * 周一登录时自动检查上周是否已结算，未结算则自动结算（静默执行）
  */
 function checkAutoSettle() {
-  if (!data.weeklySettlements) data.weeklySettlements = {};
+  if (!AppState.data.weeklySettlements) AppState.data.weeklySettlements = {};
   var today = fmtLocalDate(new Date());
   var todayDow = new Date(today + 'T00:00:00').getDay();
   if (todayDow !== 1) return;
 
   var lastWeekDates = getWeekDates(today, -1);
   var lastWeekKey = lastWeekDates[0];
-  if (data.weeklySettlements[lastWeekKey]) return;
+  if (AppState.data.weeklySettlements[lastWeekKey]) return;
 
   var st = calcSettlement(lastWeekDates, lastWeekDates[6]);
   var total = st.total;
-  data.advancedPoints = (data.advancedPoints || 0) + total;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+  AppState.data.advancedPoints = (AppState.data.advancedPoints || 0) + total;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
 
   var logDesc = '进阶自动结算（' + lastWeekDates[0] + '~' + lastWeekDates[6] + '）：';
   var parts = [];
@@ -330,18 +330,18 @@ function checkAutoSettle() {
   if (st.cat5.pts !== 0) parts.push('阅读' + (st.cat5.pts > 0 ? '+' : '') + st.cat5.pts);
   logDesc += parts.length ? parts.join('，') : '无达标奖励';
 
-  data.pointsLog.push({
+  AppState.data.pointsLog.push({
     id: Date.now().toString() + 'w',
     time: new Date().toISOString(),
     type: total >= 0 ? 'earn' : 'spend',
     delta: total,
-    balance: data.advancedPoints,
+    balance: AppState.data.advancedPoints,
     pool: 'advanced',
     desc: logDesc,
     _weeklySettle: lastWeekKey
   });
 
-  data.weeklySettlements[lastWeekKey] = {
+  AppState.data.weeklySettlements[lastWeekKey] = {
     time: new Date().toLocaleString('zh-CN'),
     totalPts: total,
     auto: true,
@@ -365,15 +365,15 @@ function checkAutoSettle() {
  * 渲染进阶结算历史表格（按周倒序）
  */
 function renderSettleHistory() {
-  if (!data.weeklySettlements) data.weeklySettlements = {};
-  var keys = Object.keys(data.weeklySettlements).sort(function(a, b) { return b.localeCompare(a); });
+  if (!AppState.data.weeklySettlements) AppState.data.weeklySettlements = {};
+  var keys = Object.keys(AppState.data.weeklySettlements).sort(function(a, b) { return b.localeCompare(a); });
   var div = document.getElementById('advSettleHistory');
   var empty = document.getElementById('advSettleHistoryEmpty');
   if (!keys.length) { div.innerHTML = ''; empty.classList.remove('hidden'); return; }
   empty.classList.add('hidden');
   var html = '<table style="width:100%;font-size:12px"><thead><tr><th>周次</th><th>作业</th><th>整理</th><th>练书法</th><th>计算</th><th>阅读</th><th>合计</th></tr></thead><tbody>';
   keys.forEach(function(key) {
-    var s = data.weeklySettlements[key];
+    var s = AppState.data.weeklySettlements[key];
     var d = new Date(key + 'T00:00:00');
     d.setDate(d.getDate() + 6);
     var end = fmtLocalDate(d);
@@ -388,3 +388,15 @@ function renderSettleHistory() {
   });
   div.innerHTML = html + '</tbody></table>';
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.getWeekDates = getWeekDates;
+AppState.getDayMultiStarStatus = getDayMultiStarStatus;
+AppState.buildStarHTML = buildStarHTML;
+AppState.countStars = countStars;
+AppState.changeAdvWeek = changeAdvWeek;
+AppState.calcSettlement = calcSettlement;
+AppState.renderAdvanced = renderAdvanced;
+AppState.doSettleWeek = doSettleWeek;
+AppState.checkAutoSettle = checkAutoSettle;
+AppState.renderSettleHistory = renderSettleHistory;

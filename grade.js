@@ -12,13 +12,13 @@
  * @returns {{ pts:number, detail:string[] }} 积分和明细
  */
 function calcPoints(rank) {
-  var rules = data.rules;
+  var rules = AppState.data.rules;
   var pts = rules.base;
   var detail = ['录入基础 +' + rules.base];
   if (rank <= 3) {
     pts += rules.top3;
     detail.push('前3名奖励 +' + rules.top3);
-    var streak = data.consecutiveTop3 + 1;
+    var streak = AppState.data.consecutiveTop3 + 1;
     if (streak >= 3) {
       var extra = rules.streakBase * (streak - 2);
       pts += extra;
@@ -59,19 +59,19 @@ function addRecord() {
   if (rank < 1) { showAlert('排名必须大于0', 'error'); return; }
 
   pushUndoSnapshot(data);
-  var earnedPts = data.rules.base;
-  var logDetails = ['录入基础 +' + data.rules.base];
+  var earnedPts = AppState.data.rules.base;
+  var logDetails = ['录入基础 +' + AppState.data.rules.base];
   if (rank <= 3) {
-    earnedPts += data.rules.top3;
-    logDetails.push('前3名奖励 +' + data.rules.top3);
-    data.consecutiveTop3 = (data.consecutiveTop3 || 0) + 1;
-    if (data.consecutiveTop3 >= 3) {
-      var extra = data.rules.streakBase * (data.consecutiveTop3 - 2);
+    earnedPts += AppState.data.rules.top3;
+    logDetails.push('前3名奖励 +' + AppState.data.rules.top3);
+    AppState.data.consecutiveTop3 = (AppState.data.consecutiveTop3 || 0) + 1;
+    if (AppState.data.consecutiveTop3 >= 3) {
+      var extra = AppState.data.rules.streakBase * (AppState.data.consecutiveTop3 - 2);
       earnedPts += extra;
-      logDetails.push('连续' + data.consecutiveTop3 + '次前3名额外 +' + extra);
+      logDetails.push('连续' + AppState.data.consecutiveTop3 + '次前3名额外 +' + extra);
     }
   } else {
-    data.consecutiveTop3 = 0;
+    AppState.data.consecutiveTop3 = 0;
   }
 
   var id = Date.now().toString();
@@ -85,17 +85,17 @@ function addRecord() {
   if (wrongCount > 0) {
     record.wrongAnswers = { total: wrongCount, corrected: 0 };
   }
-  data.records.push(record);
-  data.advancedPoints = (data.advancedPoints || 0) + earnedPts;
-  data.totalPoints = (data.dailyPoints || 0) + data.advancedPoints;
-  data.pointsLog.push({
+  AppState.data.records.push(record);
+  AppState.data.advancedPoints = (AppState.data.advancedPoints || 0) + earnedPts;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + AppState.data.advancedPoints;
+  AppState.data.pointsLog.push({
     id:id+'p', time:new Date().toISOString(), type:'earn', pool:'advanced',
-    delta:earnedPts, balance:data.advancedPoints,
+    delta:earnedPts, balance:AppState.data.advancedPoints,
     desc:'录入成绩：'+subject+'（排名第'+rank+'名）— '+logDetails.join('，')
   });
   saveData(data);
   checkAchievements();
-  showAlert('录入成功！获得 <strong>'+earnedPts+' 刷题积分</strong>，当前刷题积分：<strong>'+data.advancedPoints+'</strong>');
+  showAlert('录入成功！获得 <strong>'+earnedPts+' 刷题积分</strong>，当前刷题积分：<strong>'+AppState.data.advancedPoints+'</strong>');
   ['inp-subject','inp-score','inp-rank','inp-note','inp-wrongCount'].forEach(function(id){
     document.getElementById(id).value = '';
   });
@@ -111,11 +111,11 @@ function addRecord() {
 function renderPracticeStats() {
   var el = document.getElementById('practiceStats');
   if (!el) return;
-  var records = data.records;
+  var records = AppState.data.records;
   var total = records.length;
   var avg = total ? Math.round(records.reduce(function(s,r){return s+r.score;},0)/total*10)/10 : '--';
   var top3 = records.filter(function(r){return r.rank<=3;}).length;
-  var streak = data.consecutiveTop3 || 0;
+  var streak = AppState.data.consecutiveTop3 || 0;
   el.innerHTML =
     '<div class="metrics" style="margin-bottom:0">'+
       '<div class="metric"><div class="metric-label">录入次数</div><div class="metric-value" style="color:#00e8ff">'+total+'</div></div>'+
@@ -130,21 +130,21 @@ function renderPracticeStats() {
  * @param {string} id - 记录 ID
  */
 async function deleteRecord(id) {
-  var record = data.records.find(function(r){ return r.id === id; });
+  var record = AppState.data.records.find(function(r){ return r.id === id; });
   if (!record) { showAlert("记录不存在", "error"); return; }
   var pts = record.earnedPts || 0;
   if (!(await customConfirm("确定删除「" + record.subject + "」记录？将扣减 " + pts + " 积分。", "删除确认"))) return;
   pushUndoSnapshot(data);
-  data.records = data.records.filter(function(r){ return r.id !== id; });
+  AppState.data.records = AppState.data.records.filter(function(r){ return r.id !== id; });
   if (pts > 0) {
-    data.advancedPoints = Math.max(0, (data.advancedPoints || 0) - pts);
-    data.totalPoints = (data.dailyPoints || 0) + data.advancedPoints;
-    data.pointsLog.push({
+    AppState.data.advancedPoints = Math.max(0, (AppState.data.advancedPoints || 0) - pts);
+    AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + AppState.data.advancedPoints;
+    AppState.data.pointsLog.push({
       id: Date.now().toString() + "_del",
       time: new Date().toISOString(),
       type: "delete", pool:'advanced',
       delta: -pts,
-      balance: data.advancedPoints,
+      balance: AppState.data.advancedPoints,
       desc: "删除记录「" + record.subject + "」，扣减刷题积分"
     });
   }
@@ -161,7 +161,7 @@ async function deleteRecord(id) {
  * @param {string} id - 记录 ID
  */
 function toggleWrongCorrected(id) {
-  var record = data.records.find(function(r){ return r.id === id; });
+  var record = AppState.data.records.find(function(r){ return r.id === id; });
   if (!record || !record.wrongAnswers) return;
   if (record.wrongAnswers.corrected >= record.wrongAnswers.total) return;
   pushUndoSnapshot(data);
@@ -176,3 +176,11 @@ function toggleWrongCorrected(id) {
   renderCorrection();
   renderHistory();
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.calcPoints = calcPoints;
+AppState.updatePointsPreview = updatePointsPreview;
+AppState.addRecord = addRecord;
+AppState.renderPracticeStats = renderPracticeStats;
+AppState.deleteRecord = deleteRecord;
+AppState.toggleWrongCorrected = toggleWrongCorrected;

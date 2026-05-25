@@ -15,13 +15,13 @@ function renderSettings() {
   var gradeKey = AppState.currentChild === 1 ? 'grade1' : 'grade2';
   document.getElementById('cfg-child-name').value = cfg[nameKey];
   document.getElementById('cfg-child-grade').value = cfg[gradeKey] || 5;
-  document.getElementById('cfg-total-pts').value = data.dailyPoints || 0;
-  document.getElementById('cfg-curr-daily').textContent = '当前: ' + (data.dailyPoints || 0);
-  document.getElementById('cfg-quiz-pts').value = data.advancedPoints || 0;
-  document.getElementById('cfg-curr-adv').textContent = '当前: ' + (data.advancedPoints || 0);
-  document.getElementById('cfg-base').value = data.rules.base;
-  document.getElementById('cfg-top3').value = data.rules.top3;
-  document.getElementById('cfg-streak-base').value = data.rules.streakBase;
+  document.getElementById('cfg-total-pts').value = AppState.data.dailyPoints || 0;
+  document.getElementById('cfg-curr-daily').textContent = '当前: ' + (AppState.data.dailyPoints || 0);
+  document.getElementById('cfg-quiz-pts').value = AppState.data.advancedPoints || 0;
+  document.getElementById('cfg-curr-adv').textContent = '当前: ' + (AppState.data.advancedPoints || 0);
+  document.getElementById('cfg-base').value = AppState.data.rules.base;
+  document.getElementById('cfg-top3').value = AppState.data.rules.top3;
+  document.getElementById('cfg-streak-base').value = AppState.data.rules.streakBase;
 }
 
 /* ===== 管理员直接修改行为积分 ===== */
@@ -31,11 +31,11 @@ function renderSettings() {
 function saveTotalPoints() {
   var newVal = parseInt(document.getElementById('cfg-total-pts').value);
   if (isNaN(newVal) || newVal < 0) { showAlert('请输入有效的积分值', 'error'); return; }
-  var oldVal = data.dailyPoints || 0;
+  var oldVal = AppState.data.dailyPoints || 0;
   var diff = newVal - oldVal;
-  data.dailyPoints = newVal;
-  data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
-  data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'adjust', pool:'daily', delta:diff, balance:data.dailyPoints, desc:'管理员调整行为积分：'+oldVal+' → '+newVal });
+  AppState.data.dailyPoints = newVal;
+  AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
+  AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'adjust', pool:'daily', delta:diff, balance:AppState.data.dailyPoints, desc:'管理员调整行为积分：'+oldVal+' → '+newVal });
   saveData(data);
   showAlert('行为积分已调整为 <strong>'+newVal+'</strong>');
   renderSettings();
@@ -46,11 +46,11 @@ function saveTotalPoints() {
 function saveQuizPoints() {
   var newVal = parseInt(document.getElementById('cfg-quiz-pts').value);
   if (isNaN(newVal) || newVal < 0) { showAlert('请输入有效的积分值', 'error'); return; }
-  var oldVal = data.advancedPoints || 0;
+  var oldVal = AppState.data.advancedPoints || 0;
   var diff = newVal - oldVal;
-  data.advancedPoints = newVal;
-  data.totalPoints = (data.dailyPoints || 0) + data.advancedPoints;
-  data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'adjust', pool:'advanced', delta:diff, balance:data.advancedPoints, desc:'管理员调整刷题积分：'+oldVal+' → '+newVal });
+  AppState.data.advancedPoints = newVal;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + AppState.data.advancedPoints;
+  AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'adjust', pool:'advanced', delta:diff, balance:AppState.data.advancedPoints, desc:'管理员调整刷题积分：'+oldVal+' → '+newVal });
   saveData(data);
   showAlert('刷题积分已调整为 <strong>'+newVal+'</strong>');
   renderSettings();
@@ -65,7 +65,7 @@ function saveRules() {
   var top3 = parseInt(document.getElementById('cfg-top3').value);
   var streakBase = parseInt(document.getElementById('cfg-streak-base').value);
   if (isNaN(base)||isNaN(top3)||isNaN(streakBase)) { showAlert('请填写完整的规则参数', 'error'); return; }
-  data.rules = { base:base, top3:top3, streakBase:streakBase };
+  AppState.data.rules = { base:base, top3:top3, streakBase:streakBase };
   saveData(data);
   showAlert('积分规则已保存！');
 }
@@ -77,7 +77,7 @@ function saveRules() {
  */
 function generateSyncCode() {
   try {
-    var json = JSON.stringify(data);
+    var json = JSON.stringify(AppState.data);
     var encoded = btoa(unescape(encodeURIComponent(json)));
     document.getElementById('syncCodeText').value = encoded;
     document.getElementById('syncCodeArea').classList.remove('hidden');
@@ -137,7 +137,7 @@ async function importSyncCode() {
     var cfg = getChildrenConfig();
     var childName = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
     if (!(await customConfirm('导入将覆盖「' + childName + '」当前数据，确定继续？', '导入确认'))) return;
-    data = d;
+    data = d; AppState.data = d;
     saveData(data);
     renderDashboard();
     showAlert('同步数据导入成功！');
@@ -161,7 +161,7 @@ function doImportSyncFile(e) {
       var d = JSON.parse(ev.target.result);
       if (!d.records) throw new Error('格式错误');
       if (!(await customConfirm('导入将覆盖当前数据，确定继续？', '导入确认'))) return;
-      data = d; saveData(data); renderDashboard(); showAlert('文件同步成功！');
+      data = d; AppState.data = d; saveData(data); renderDashboard(); showAlert('文件同步成功！');
     } catch(err) { showAlert('文件格式不正确', 'error'); }
   };
   reader.readAsText(file); e.target.value = '';
@@ -174,7 +174,7 @@ function doImportSyncFile(e) {
 function exportJSON() {
   var cfg = getChildrenConfig();
   var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
-  var blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  var blob = new Blob([JSON.stringify(AppState.data, null, 2)], {type:'application/json'});
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url; a.download = 'grade_tracker_' + childName + '_' + new Date().toISOString().slice(0,10) + '.json';
@@ -187,7 +187,7 @@ function exportJSON() {
 function exportCSV() {
   var cfg = getChildrenConfig();
   var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
-  var records = data.records || [];
+  var records = AppState.data.records || [];
   if (records.length === 0) { alert('暂无成绩记录可导出'); return; }
 
   // UTF-8 BOM + 表头（中文列名）
@@ -220,7 +220,7 @@ function exportCSV() {
 function exportReport() {
   var cfg = getChildrenConfig();
   var childName = (AppState.currentChild === 1 ? cfg.name1 : cfg.name2).replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '_');
-  var records = data.records || [];
+  var records = AppState.data.records || [];
   if (records.length === 0) { alert('暂无成绩记录可生成报告'); return; }
 
   // 计算统计摘要
@@ -320,7 +320,7 @@ function doImport(e) {
     try {
       var d = JSON.parse(ev.target.result);
       if (!d.records) throw new Error('格式错误');
-      data = d; saveData(data); renderDashboard(); showAlert('数据导入成功！');
+      data = d; AppState.data = d; saveData(data); renderDashboard(); showAlert('数据导入成功！');
     } catch(err) { showAlert('导入失败：文件格式不正确', 'error'); }
   };
   reader.readAsText(file); e.target.value = '';
@@ -332,7 +332,7 @@ async function clearAllData() {
   var childName = AppState.currentChild === 1 ? cfg.name1 : cfg.name2;
   if (!(await customConfirm('确定清空「' + childName + '」的全部数据？此操作不可撤销！', '清空确认'))) return;
   if (!(await customConfirm('再次确认：将删除「' + childName + '」所有成绩记录和积分数据！', '二次确认'))) return;
-  data = getDefaultData();
+  data = getDefaultData(); AppState.data = data;
   saveData(data);
   renderDashboard();
   showAlert('数据已清空');
@@ -347,3 +347,23 @@ function toggleAccordion(header) {
   var item = header.parentElement;
   item.classList.toggle('open');
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.renderSettings = renderSettings;
+AppState.saveTotalPoints = saveTotalPoints;
+AppState.saveQuizPoints = saveQuizPoints;
+AppState.saveRules = saveRules;
+AppState.generateSyncCode = generateSyncCode;
+AppState.copySyncCode = copySyncCode;
+AppState.fallbackCopy = fallbackCopy;
+AppState.showSyncQR = showSyncQR;
+AppState.importSyncCode = importSyncCode;
+AppState.importSyncFile = importSyncFile;
+AppState.doImportSyncFile = doImportSyncFile;
+AppState.exportJSON = exportJSON;
+AppState.exportCSV = exportCSV;
+AppState.exportReport = exportReport;
+AppState.importData = importData;
+AppState.doImport = doImport;
+AppState.clearAllData = clearAllData;
+AppState.toggleAccordion = toggleAccordion;

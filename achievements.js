@@ -6,7 +6,7 @@
  */
 
 /* ===== 成就系统 ===== */
-var ACHIEVEMENTS = [
+AppState.ACHIEVEMENTS = [
   // ———— 低年级段（1-3年级，习惯养成） ————
   // 专注小芽 C1
   { id:'A01', name:'专注小芽', desc:'连续7天完成日常打卡', icon:'🌱', cap:'C1', color:'#22ffb3', tier:'common', grades:[1,2,3], group:'habit', conditionType:'consecutiveCheckinDays', conditionValue:7 },
@@ -53,7 +53,7 @@ var ACHIEVEMENTS = [
  */
 function getApplicableAchievements() {
   var grade = getCurrentChildGrade();
-  return ACHIEVEMENTS.filter(function(a){ return a.grades.indexOf(grade) !== -1; });
+  return AppState.ACHIEVEMENTS.filter(function(a){ return a.grades.indexOf(grade) !== -1; });
 }
 
 /**
@@ -79,9 +79,9 @@ function getAchievementGroups() {
  * 计算某个成就的当前进度值（分子），用于进度条显示
  */
 function getAchievementProgress(a) {
-  var dailies = data.dailyTasks || {};
-  var records = data.records || [];
-  var unlocked = data.achievements ? data.achievements.unlocked : [];
+  var dailies = AppState.data.dailyTasks || {};
+  var records = AppState.data.records || [];
+  var unlocked = AppState.data.achievements ? AppState.data.achievements.unlocked : [];
   if (a.conditionType === 'consecutiveCheckinDays') {
     var dates = Object.keys(dailies).filter(function(d) { return dailies[d] && dailies[d].tasks; }).sort().reverse();
     var count = 0;
@@ -112,8 +112,8 @@ function getAchievementProgress(a) {
     records.forEach(function(r) { if (!subjects[r.subject]) { subjects[r.subject] = { hasTop3:false }; sIds.push(r.subject); } if (r.rank <= 3) subjects[r.subject].hasTop3 = true; });
     return sIds.filter(function(s) { return subjects[s].hasTop3; }).length;
   }
-  if (a.conditionType === 'consecutiveTop3') return data.consecutiveTop3 || 0;
-  if (a.conditionType === 'weeklyExcellent') return data.weeklySettlements && Object.keys(data.weeklySettlements).some(function(wk) { return data.weeklySettlements[wk].grade === '优秀'; }) ? 1 : 0;
+  if (a.conditionType === 'consecutiveTop3') return AppState.data.consecutiveTop3 || 0;
+  if (a.conditionType === 'weeklyExcellent') return AppState.data.weeklySettlements && Object.keys(AppState.data.weeklySettlements).some(function(wk) { return AppState.data.weeklySettlements[wk].grade === '优秀'; }) ? 1 : 0;
   if (a.conditionType === 'weekTimeManager' || a.conditionType === 'weekEfficient') return checkWeekDualStatus(a) ? 1 : 0;
   if (a.conditionType === 'totalUnlocked') return unlocked.length;
   if (a.conditionType === 'allUnlocked') {
@@ -127,13 +127,13 @@ function getAchievementTotal(a) {
   if (a.conditionType === 'consecutiveCheckinDays' || a.conditionType === 'totalCheckins' || a.conditionType === 'subjectCumulativeTop3' || a.conditionType === 'consecutiveTop3' || a.conditionType === 'totalUnlocked' || a.conditionType === 'allUnlocked') return a.conditionValue || 1;
   if (a.conditionType === 'subjectConsecutiveTop3') return a.conditionValue || 3;
   if (a.conditionType === 'weekFullCheckin') return 7;
-  if (a.conditionType === 'allSubjectTop3') { var s = {}; (data.records||[]).forEach(function(r){ s[r.subject]=true; }); return Math.max(Object.keys(s).length,1); }
+  if (a.conditionType === 'allSubjectTop3') { var s = {}; (AppState.data.records||[]).forEach(function(r){ s[r.subject]=true; }); return Math.max(Object.keys(s).length,1); }
   if (a.conditionType === 'weeklyExcellent' || a.conditionType === 'weekTimeManager' || a.conditionType === 'weekEfficient') return 1;
   return 1;
 }
 
 function isWeekFullCheckin() {
-  var dailies = data.dailyTasks || {};
+  var dailies = AppState.data.dailyTasks || {};
   var today = new Date();
   var day = today.getDay();
   var monOff = day === 0 ? -6 : 1 - day;
@@ -180,7 +180,7 @@ function countWeekCheckins(dailies) {
 }
 
 function getSubjectBestProgress(a) {
-  var records = data.records || [];
+  var records = AppState.data.records || [];
   var bySub = {};
   records.forEach(function(r) {
     if (!bySub[r.subject]) bySub[r.subject] = [];
@@ -204,8 +204,8 @@ function getSubjectBestProgress(a) {
 }
 
 function checkWeekDualStatus(a) {
-  var dailies = data.dailyTasks || {};
-  var records = data.records || [];
+  var dailies = AppState.data.dailyTasks || {};
+  var records = AppState.data.records || [];
   var today = new Date();
   var day = today.getDay();
   var monOff = day === 0 ? -6 : 1 - day;
@@ -245,9 +245,9 @@ function checkWeekDualStatus(a) {
  */
 function checkAchievements(silent) {
   var silentMode = silent || false;
-  if (!data.achievements) data.achievements = { unlocked: [] };
+  if (!AppState.data.achievements) AppState.data.achievements = { unlocked: [] };
   var newlyUnlocked = [];
-  var unlocked = data.achievements.unlocked;
+  var unlocked = AppState.data.achievements.unlocked;
 
   getApplicableAchievements().forEach(function(a) {
     if (unlocked.indexOf(a.id) !== -1) return;
@@ -261,12 +261,12 @@ function checkAchievements(silent) {
     if (a.conditionType === 'weekFullCheckin') { earned = isWeekFullCheckin(); }
     if (a.conditionType === 'allSubjectTop3') {
       var subMap = {};
-      (data.records||[]).forEach(function(r) { subMap[r.subject] = (subMap[r.subject]||0) + 1; });
+      (AppState.data.records||[]).forEach(function(r) { subMap[r.subject] = (subMap[r.subject]||0) + 1; });
       var subCount = Object.keys(subMap).length;
       earned = subCount >= 2 && progress >= subCount;
     }
     if (a.conditionType === 'weeklyExcellent') {
-      earned = data.weeklySettlements && Object.keys(data.weeklySettlements).some(function(wk) { return data.weeklySettlements[wk].grade === '优秀'; });
+      earned = AppState.data.weeklySettlements && Object.keys(AppState.data.weeklySettlements).some(function(wk) { return AppState.data.weeklySettlements[wk].grade === '优秀'; });
     }
     if (a.conditionType === 'weekTimeManager' || a.conditionType === 'weekEfficient') { earned = checkWeekDualStatus(a); }
     if (a.conditionType === 'allUnlocked') {
@@ -317,7 +317,7 @@ function checkAchievements(silent) {
 function renderAchievementList() {
   var container = document.getElementById('achievementList');
   if (!container) return;
-  var unlocked = (data.achievements && data.achievements.unlocked) ? data.achievements.unlocked : [];
+  var unlocked = (AppState.data.achievements && AppState.data.achievements.unlocked) ? AppState.data.achievements.unlocked : [];
   var groups = getAchievementGroups();
   if (!groups.length) { container.innerHTML = '<div class="empty">暂无成就数据</div>'; return; }
 

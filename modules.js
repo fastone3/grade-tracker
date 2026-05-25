@@ -27,23 +27,23 @@ function renderDashboard() {
   var icon = AppState.currentChild === 1 ? '👦' : '👧';
   document.getElementById('compactTitle').textContent = icon + ' ' + name + ' · 成绩 & 积分';
 
-  var records = data.records;
+  var records = AppState.data.records;
 
   var grade = getCurrentChildGrade();
-  var dailyPts = data.dailyPoints || 0;
-  var advPts = data.advancedPoints || 0;
+  var dailyPts = AppState.data.dailyPoints || 0;
+  var advPts = AppState.data.advancedPoints || 0;
   var showDualPool = grade >= 4;
 
   // 积分池汇总：4项指标（手机端2×2布局）
-  var earnedDaily  = data.pointsLog.filter(function(l){return l.delta>0 && (l.pool||'daily')==='daily';}).reduce(function(s,l){return s+l.delta;},0);
-  var earnedAdv    = data.pointsLog.filter(function(l){return l.delta>0 && l.pool==='advanced';}).reduce(function(s,l){return s+l.delta;},0);
+  var earnedDaily  = AppState.data.pointsLog.filter(function(l){return l.delta>0 && (l.pool||'daily')==='daily';}).reduce(function(s,l){return s+l.delta;},0);
+  var earnedAdv    = AppState.data.pointsLog.filter(function(l){return l.delta>0 && l.pool==='advanced';}).reduce(function(s,l){return s+l.delta;},0);
   document.getElementById('dashMetrics').innerHTML =
     '<div class="metric"><div class="metric-label">行为积分池</div><div class="metric-value" style="color:#00e8ff">'+dailyPts+'</div></div>'+
     '<div class="metric"><div class="metric-label">行为累计获得</div><div class="metric-value green">'+earnedDaily+'</div></div>'+
     (showDualPool ? '<div class="metric"><div class="metric-label">刷题积分池</div><div class="metric-value" style="color:#fbbf24">'+advPts+'</div></div>' : '')+
     (showDualPool ? '<div class="metric"><div class="metric-label">刷题累计获得</div><div class="metric-value green">'+earnedAdv+'</div></div>' : '');
 
-  var logs = (data.pointsLog || []).slice().sort(function(a,b){return b.time.localeCompare(a.time);});
+  var logs = (AppState.data.pointsLog || []).slice().sort(function(a,b){return b.time.localeCompare(a.time);});
 
   // ———— Pool A：行为积分池 ————
   var poolALogs = logs.filter(function(l){return (l.pool||'daily')==='daily';}).slice(0,5);
@@ -104,13 +104,13 @@ function renderHistory() {
   var search = (document.getElementById('searchInput').value || '').toLowerCase();
   var filterSub = document.getElementById('filterSubject').value;
   var subjects = [];
-  data.records.forEach(function(r){ if (subjects.indexOf(r.subject)===-1) subjects.push(r.subject); });
+  AppState.data.records.forEach(function(r){ if (subjects.indexOf(r.subject)===-1) subjects.push(r.subject); });
   var sel = document.getElementById('filterSubject');
   sel.innerHTML = '<option value="">全部科目</option>' + subjects.map(function(s){
     return '<option value="'+s+'" '+(s===filterSub?'selected':'')+'>'+s+'</option>';
   }).join('');
 
-  var filtered = data.records.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
+  var filtered = AppState.data.records.slice().sort(function(a,b){return b.date.localeCompare(a.date);});
   if (search) filtered = filtered.filter(function(r){
     return r.subject.toLowerCase().indexOf(search)!==-1 || (r.note||'').toLowerCase().indexOf(search)!==-1;
   });
@@ -151,13 +151,13 @@ function getWrongBadgeHtml(record) {
 function renderTrend() {
   var sub = document.getElementById('trendSubject').value;
   var subjects = [];
-  data.records.forEach(function(r){ if (subjects.indexOf(r.subject)===-1) subjects.push(r.subject); });
+  AppState.data.records.forEach(function(r){ if (subjects.indexOf(r.subject)===-1) subjects.push(r.subject); });
   var sel = document.getElementById('trendSubject');
   sel.innerHTML = '<option value="">全部科目</option>' + subjects.map(function(s){
     return '<option value="'+s+'" '+(s===sub?'selected':'')+'>'+s+'</option>';
   }).join('');
 
-  var filtered = data.records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var filtered = AppState.data.records.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
   if (sub) filtered = filtered.filter(function(r){return r.subject===sub;});
 
   var labels = filtered.map(function(r){return r.date+'\n'+r.subject;});
@@ -202,10 +202,10 @@ function renderTrend() {
  */
 function renderPoints() {
   // 连续前3名状态 → 紧凑信息条
-  var streak = data.consecutiveTop3 || 0;
+  var streak = AppState.data.consecutiveTop3 || 0;
   var barHtml = '';
   if (streak >= 3) {
-    var nextExtra = data.rules.streakBase * (streak - 1);
+    var nextExtra = AppState.data.rules.streakBase * (streak - 1);
     barHtml = '<div class="streak-box" style="margin-bottom:0;display:flex;align-items:center;gap:10px"><span style="color:var(--js-yellow);font-weight:600">连续前3名🔥</span><span style="font-size:13px;color:var(--js-text)">已连 <strong>'+streak+'</strong> 次</span><span style="font-size:12px;color:var(--js-yellow);margin-left:auto">下次额外 <strong>+'+nextExtra+'</strong></span></div>';
   } else if (streak > 0) {
     barHtml = '<div class="streak-box" style="margin-bottom:0;display:flex;align-items:center;gap:8px;padding:10px 14px"><span style="font-size:13px;color:var(--js-text)">连续前3 <strong>'+streak+'</strong> 次</span><span style="font-size:12px;color:var(--js-text-secondary);margin-left:auto">再 '+(3-streak)+' 次激活奖励</span></div>';
@@ -213,7 +213,7 @@ function renderPoints() {
   var barEl = document.getElementById('streakBar');
   if (barEl) barEl.innerHTML = barHtml;
 
-  var logs = data.pointsLog.slice().sort(function(a,b){return b.time.localeCompare(a.time);});
+  var logs = AppState.data.pointsLog.slice().sort(function(a,b){return b.time.localeCompare(a.time);});
   var tbody = document.getElementById('pointsLog');
   var mobCards = document.getElementById('pointsLogMobCards');
   if (!logs.length) { tbody.innerHTML=''; if(mobCards) mobCards.innerHTML=''; document.getElementById('pointsLogEmpty').classList.remove('hidden'); return; }
@@ -262,14 +262,14 @@ function addPoints() {
   var isAdv = pool && pool.value === 'advanced';
   var srcKey = isAdv ? 'advancedPoints' : 'dailyPoints';
   var srcLabel = isAdv ? '刷题积分' : '行为积分';
-  data[srcKey] = (data[srcKey] || 0) + amount;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
-  data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'earn', pool: isAdv ? 'advanced' : 'daily', delta:amount, balance:data[srcKey], desc:note||('手动增加'+srcLabel) });
+  AppState.data[srcKey] = (AppState.data[srcKey] || 0) + amount;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
+  AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'earn', pool: isAdv ? 'advanced' : 'daily', delta:amount, balance:AppState.data[srcKey], desc:note||('手动增加'+srcLabel) });
   pushUndoSnapshot(data);
   saveData(data);
   document.getElementById('addAmount').value = '';
   document.getElementById('addNote').value = '';
-  showAlert('成功增加 <strong>'+amount+' '+srcLabel+'</strong>，当前余额：<strong>'+data[srcKey]+'</strong>');
+  showAlert('成功增加 <strong>'+amount+' '+srcLabel+'</strong>，当前余额：<strong>'+AppState.data[srcKey]+'</strong>');
   renderPoints();
 }
 
@@ -285,15 +285,15 @@ function spendPoints() {
   var isAdv = pool && pool.value === 'advanced';
   var srcKey = isAdv ? 'advancedPoints' : 'dailyPoints';
   var srcLabel = isAdv ? '刷题积分' : '行为积分';
-  if (amount > (data[srcKey] || 0)) { showAlert(srcLabel+'余额不足！', 'error'); return; }
-  data[srcKey] -= amount;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
-  data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'spend', pool: isAdv ? 'advanced' : 'daily', delta:-amount, balance:data[srcKey], desc:note||('手动消费（'+srcLabel+'）') });
+  if (amount > (AppState.data[srcKey] || 0)) { showAlert(srcLabel+'余额不足！', 'error'); return; }
+  AppState.data[srcKey] -= amount;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
+  AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'spend', pool: isAdv ? 'advanced' : 'daily', delta:-amount, balance:AppState.data[srcKey], desc:note||('手动消费（'+srcLabel+'）') });
   pushUndoSnapshot(data);
   saveData(data);
   document.getElementById('spendAmount').value = '';
   document.getElementById('spendNote').value = '';
-  showAlert('消费成功！扣除 <strong>'+amount+' '+srcLabel+'</strong>，剩余：<strong>'+data[srcKey]+'</strong>');
+  showAlert('消费成功！扣除 <strong>'+amount+' '+srcLabel+'</strong>，剩余：<strong>'+AppState.data[srcKey]+'</strong>');
   renderPoints();
 }
 
@@ -309,7 +309,7 @@ AppState.correctionChart = null;
  */
 function calcCorrectionStats() {
   var totalWrong = 0, corrected = 0;
-  data.records.forEach(function(r){
+  AppState.data.records.forEach(function(r){
     if (r.wrongAnswers && r.wrongAnswers.total > 0) {
       totalWrong += r.wrongAnswers.total;
       corrected += r.wrongAnswers.corrected;
@@ -333,7 +333,7 @@ function renderCorrection() {
     '<div class="metric"><div class="metric-label">订正率</div><div class="metric-value gold">' + (stats.rate !== '--' ? stats.rate + '%' : '--') + '</div></div>';
 
   // 错题记录列表
-  var recordsWithWrong = data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
+  var recordsWithWrong = AppState.data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
   recordsWithWrong.sort(function(a,b){ return b.date.localeCompare(a.date); });
 
   var tbody = document.getElementById('correctionTable');
@@ -374,7 +374,7 @@ function renderCorrection() {
  */
 function renderCorrectionChart(recordsWithWrong) {
   if (!recordsWithWrong) {
-    recordsWithWrong = data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
+    recordsWithWrong = AppState.data.records.filter(function(r){ return r.wrongAnswers && r.wrongAnswers.total > 0; });
   }
   recordsWithWrong.sort(function(a,b){ return a.date.localeCompare(b.date); });
 
@@ -436,3 +436,17 @@ function renderCorrectionChart(recordsWithWrong) {
     }
   });
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.getRankBadge = getRankBadge;
+AppState.renderDashboard = renderDashboard;
+AppState.renderHistory = renderHistory;
+AppState.getWrongBadgeHtml = getWrongBadgeHtml;
+AppState.renderTrend = renderTrend;
+AppState.renderPoints = renderPoints;
+AppState.switchPtsAction = switchPtsAction;
+AppState.addPoints = addPoints;
+AppState.spendPoints = spendPoints;
+AppState.calcCorrectionStats = calcCorrectionStats;
+AppState.renderCorrection = renderCorrection;
+AppState.renderCorrectionChart = renderCorrectionChart;

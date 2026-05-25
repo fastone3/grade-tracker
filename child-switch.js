@@ -10,7 +10,7 @@
  */
 function switchChild(childIndex) {
   AppState.currentChild = childIndex;
-  data = loadData();
+  AppState.data = loadData();
 
   var btn1 = document.getElementById('hsBtn1');
   var btn2 = document.getElementById('hsBtn2');
@@ -84,3 +84,9 @@ function saveChildNames() {
   updatePracticeVisibility();
   showAlert('名称和年级已保存');
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.switchChild = switchChild;
+AppState.updateChildSwitcherLabels = updateChildSwitcherLabels;
+AppState.updatePracticeVisibility = updatePracticeVisibility;
+AppState.saveChildNames = saveChildNames;

@@ -13,7 +13,8 @@
 AppState.chartScore = null;
 AppState.chartRank = null;
 var data = loadData();
-if (!data.dailyTasks) data.dailyTasks = {};
+AppState.data = data;
+if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
 
 
 /* ===== Tab 切换（桌面端） ===== */
@@ -34,11 +35,11 @@ function switchTab(tab, el) {
   });
   // 渲染
   renderTab(tab);
-  // 同步刷题计分规则（从 data.rules 刷新到 DOM）
-  if (data && data.rules) {
-    var rb = document.getElementById('ruleBase2'); if(rb) rb.textContent = data.rules.base;
-    var rt = document.getElementById('ruleTop3_2'); if(rt) rt.textContent = data.rules.top3;
-    var rs = document.getElementById('ruleStreak2'); if(rs) rs.textContent = data.rules.streakBase;
+  // 同步刷题计分规则（从 AppState.data.rules 刷新到 DOM）
+  if (AppState.data && AppState.data.rules) {
+    var rb = document.getElementById('ruleBase2'); if(rb) rb.textContent = AppState.data.rules.base;
+    var rt = document.getElementById('ruleTop3_2'); if(rt) rt.textContent = AppState.data.rules.top3;
+    var rs = document.getElementById('ruleStreak2'); if(rs) rs.textContent = AppState.data.rules.streakBase;
   }
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -61,10 +62,10 @@ function switchTabMobile(tab, el) {
   if (panel) panel.classList.add('active');
   renderTab(tab);
   // 同步刷题计分规则
-  if (data && data.rules) {
-    var rb = document.getElementById('ruleBase2'); if(rb) rb.textContent = data.rules.base;
-    var rt = document.getElementById('ruleTop3_2'); if(rt) rt.textContent = data.rules.top3;
-    var rs = document.getElementById('ruleStreak2'); if(rs) rs.textContent = data.rules.streakBase;
+  if (AppState.data && AppState.data.rules) {
+    var rb = document.getElementById('ruleBase2'); if(rb) rb.textContent = AppState.data.rules.base;
+    var rt = document.getElementById('ruleTop3_2'); if(rt) rt.textContent = AppState.data.rules.top3;
+    var rs = document.getElementById('ruleStreak2'); if(rs) rs.textContent = AppState.data.rules.streakBase;
   }
   window.scrollTo({top:0, behavior:'smooth'});
 }
@@ -307,7 +308,7 @@ function bindEventHandlers() {
 function updateUndoBtnState() {
   var btn = document.getElementById('btnUndo');
   if (!btn) return;
-  var hasUndo = data && data.undoStack && data.undoStack.length > 0;
+  var hasUndo = AppState.data && AppState.data.undoStack && AppState.data.undoStack.length > 0;
   btn.disabled = !hasUndo;
   btn.title = hasUndo ? '撤销上一步操作' : '无操作可撤销';
 }
@@ -328,3 +329,14 @@ renderDashboard();
 // 绑定事件（替代所有 inline onclick）
 bindEventHandlers();
 updateUndoBtnState();
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.switchTab = switchTab;
+AppState.switchTabMobile = switchTabMobile;
+AppState.renderTab = renderTab;
+AppState.openSettings = openSettings;
+AppState.refreshCurrentPanel = refreshCurrentPanel;
+AppState.switchDailySubTabUI = switchDailySubTabUI;
+AppState.switchSubTabUI = switchSubTabUI;
+AppState.bindEventHandlers = bindEventHandlers;
+AppState.updateUndoBtnState = updateUndoBtnState;

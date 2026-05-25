@@ -28,7 +28,7 @@ function switchDailySubTab(sub, el) {
 AppState.concentrationChart = null;
 
 /* ===== 日常任务定义 ===== */
-var DAILY_TASKS = [
+AppState.DAILY_TASKS = [
   {
     id: 1,
     name: '按时完成课内作业、不拖拉',
@@ -76,7 +76,7 @@ var DAILY_TASKS = [
   }
 ];
 
-var BEDTIME_RULES = [
+AppState.BEDTIME_RULES = [
   { key: 'chat', label: '要聊天', time: '9:10上床', pts: 5, icon: '💬' },
   { key: 'quiet', label: '不要聊天', time: '9:30上床', pts: 5, icon: '🤫' },
   { key: 'late', label: '特殊情况', time: '11:00上床', pts: 5, icon: '🌙' }
@@ -89,15 +89,15 @@ var BEDTIME_RULES = [
  * @returns {{ tasks:object, bedtime:object|null, extras:Array }}
  */
 function getDayData(date) {
-  if (!data.dailyTasks) data.dailyTasks = {};
-  if (!data.dailyTasks[date]) {
-    data.dailyTasks[date] = {
+  if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
+  if (!AppState.data.dailyTasks[date]) {
+    AppState.data.dailyTasks[date] = {
       tasks: {}, // { taskId: { done: bool, delta: int, ts: string } }
       bedtime: null, // { key: string, pts: int, ts: string }
       extras: [] // [{ desc: string, pts: int, ts: string }]
     };
   }
-  return data.dailyTasks[date];
+  return AppState.data.dailyTasks[date];
 }
 
 /* ===== 任务打卡（加分） ===== */
@@ -110,7 +110,7 @@ function taskCheck(taskId) {
   var date = document.getElementById('daily-date').value;
   if (!date) { showAlert('请先选择日期', 'error'); return; }
   var dayData = getDayData(date);
-  var task = DAILY_TASKS.find(function(t){ return t.id === taskId; });
+  var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
   if (!task) return;
 
   var alreadyDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
@@ -119,22 +119,22 @@ function taskCheck(taskId) {
     // 取消打卡
     var prevDelta = dayData.tasks[taskId].delta;
     if (prevDelta > 0) {
-      data.dailyPoints = (data.dailyPoints || 0) - prevDelta;
-      data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
+      AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - prevDelta;
+      AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
       removeLastDailyLog(date, 'task_' + taskId);
       dayData.tasks[taskId] = { done: false, delta: 0, ts: null };
       showAlert(task.name + ' 打卡已取消（-' + prevDelta + '分）');
     } else if (prevDelta < 0) {
-      data.dailyPoints = (data.dailyPoints || 0) - prevDelta;
-      data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
+      AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - prevDelta;
+      AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
       removeLastDailyLog(date, 'task_' + taskId);
       dayData.tasks[taskId] = { done: false, delta: 0, ts: null };
       showAlert(task.name + ' 扣分已取消（+' + Math.abs(prevDelta) + '分）');
     }
   } else {
     // 打卡加分
-    data.dailyPoints = (data.dailyPoints || 0) + task.plusPts;
-    data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
+    AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) + task.plusPts;
+    AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
     dayData.tasks[taskId] = { done: true, delta: task.plusPts, ts: new Date().toISOString() };
     addDailyPointsLog(date, 'earn', task.plusPts, task.icon + ' ' + task.name, 'task_' + taskId);
     showAlert(task.icon + ' ' + task.name + ' 已完成！<strong>+' + task.plusPts + '分</strong>');
@@ -153,14 +153,14 @@ function taskDeduct(taskId) {
   var date = document.getElementById('daily-date').value;
   if (!date) { showAlert('请先选择日期', 'error'); return; }
   var dayData = getDayData(date);
-  var task = DAILY_TASKS.find(function(t){ return t.id === taskId; });
+  var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
   if (!task || !task.minusTrigger) { showAlert('该项目不支持扣分', 'error'); return; }
 
   pushUndoSnapshot(data);
   var wasDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
   if (wasDone && dayData.tasks[taskId].delta > 0) {
-    data.dailyPoints = (data.dailyPoints || 0) - dayData.tasks[taskId].delta;
-    data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
+    AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - dayData.tasks[taskId].delta;
+    AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
     removeLastDailyLog(date, 'task_' + taskId);
   }
   if (wasDone && dayData.tasks[taskId].delta < 0) {
@@ -168,8 +168,8 @@ function taskDeduct(taskId) {
     return;
   }
 
-  data.dailyPoints = (data.dailyPoints || 0) + task.minusPts;
-  data.totalPoints = data.dailyPoints + (data.advancedPoints || 0);
+  AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) + task.minusPts;
+  AppState.data.totalPoints = AppState.data.dailyPoints + (AppState.data.advancedPoints || 0);
   dayData.tasks[taskId] = { done: true, delta: task.minusPts, ts: new Date().toISOString() };
   addDailyPointsLog(date, 'spend', task.minusPts, task.icon + ' ' + task.minusTrigger, 'task_' + taskId);
   showAlert(task.icon + ' ' + task.minusTrigger + '！<strong>' + task.minusPts + '分</strong>');
@@ -186,28 +186,28 @@ function bedtimeCheck(key) {
   var date = document.getElementById('daily-date').value;
   if (!date) { showAlert('请先选择日期', 'error'); return; }
   var dayData = getDayData(date);
-  var rule = BEDTIME_RULES.find(function(r){ return r.key === key; });
+  var rule = AppState.BEDTIME_RULES.find(function(r){ return r.key === key; });
   if (!rule) return;
 
   pushUndoSnapshot(data);
   if (dayData.bedtime && dayData.bedtime.key === key) {
     // 取消
-    data.dailyPoints = (data.dailyPoints || 0) - rule.pts;
+    AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - rule.pts;
     removeLastDailyLog(date, 'bedtime');
     dayData.bedtime = null;
-    data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+    AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
     showAlert('就寝打卡已取消（-' + rule.pts + '分）');
   } else {
     // 之前有其他就寝记录，先撤回
     if (dayData.bedtime) {
-      var prev = BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
+      var prev = AppState.BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
       if (prev) {
-        data.dailyPoints = (data.dailyPoints || 0) - prev.pts;
+        AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - prev.pts;
         removeLastDailyLog(date, 'bedtime');
       }
     }
-    data.dailyPoints = (data.dailyPoints || 0) + rule.pts;
-    data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+    AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) + rule.pts;
+    AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
     dayData.bedtime = { key: key, pts: rule.pts, ts: new Date().toISOString() };
     addDailyPointsLog(date, 'earn', rule.pts, rule.icon + ' ' + rule.label + '（' + rule.time + '）', 'bedtime');
     showAlert(rule.icon + ' ' + rule.label + '（' + rule.time + '）已记录！<strong>+' + rule.pts + '分</strong>');
@@ -230,8 +230,8 @@ function addExtraTask() {
   pushUndoSnapshot(data);
   var dayData = getDayData(date);
   var id = Date.now().toString();
-  data.dailyPoints = (data.dailyPoints || 0) + pts;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+  AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) + pts;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   dayData.extras.push({ id: id, desc: desc, pts: pts, ts: new Date().toISOString() });
   addDailyPointsLog(date, 'earn', pts, '附加：' + desc, 'extra_' + id);
   saveData(data);
@@ -252,8 +252,8 @@ function removeExtraTask(date, extraId) {
   var extra = dayData.extras.find(function(e){ return e.id === extraId; });
   if (!extra) return;
   pushUndoSnapshot(data);
-  data.dailyPoints = (data.dailyPoints || 0) - extra.pts;
-  data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+  AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - extra.pts;
+  AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   removeLastDailyLog(date, 'extra_' + extraId);
   dayData.extras = dayData.extras.filter(function(e){ return e.id !== extraId; });
   saveData(data);
@@ -271,12 +271,12 @@ function removeExtraTask(date, extraId) {
  * @param {string} category - 类别标签（task_1 / bedtime / extra_xxx）
  */
 function addDailyPointsLog(date, type, delta, desc, category) {
-  data.pointsLog.push({
+  AppState.data.pointsLog.push({
     id: Date.now().toString() + 'd',
     time: new Date().toISOString(),
     type: type,
     delta: delta,
-    balance: data.dailyPoints,
+    balance: AppState.data.dailyPoints,
     desc: '[' + date + '] ' + desc,
     pool: 'daily',
     _dailyCat: category || 'task'
@@ -291,17 +291,17 @@ function addDailyPointsLog(date, type, delta, desc, category) {
  */
 function removeLastDailyLog(date, category) {
   // 找到当天该类别最新的日志并移除
-  for (var i = data.pointsLog.length - 1; i >= 0; i--) {
-    var log = data.pointsLog[i];
+  for (var i = AppState.data.pointsLog.length - 1; i >= 0; i--) {
+    var log = AppState.data.pointsLog[i];
     if (log.desc && log.desc.indexOf('[' + date + ']') === 0 && log._dailyCat === category) {
-      data.pointsLog.splice(i, 1);
+      AppState.data.pointsLog.splice(i, 1);
       return;
     }
   }
   // 兜底：移除当天最后一条
-  for (var j = data.pointsLog.length - 1; j >= 0; j--) {
-    if (data.pointsLog[j].desc && data.pointsLog[j].desc.indexOf('[' + date + ']') === 0) {
-      data.pointsLog.splice(j, 1);
+  for (var j = AppState.data.pointsLog.length - 1; j >= 0; j--) {
+    if (AppState.data.pointsLog[j].desc && AppState.data.pointsLog[j].desc.indexOf('[' + date + ']') === 0) {
+      AppState.data.pointsLog.splice(j, 1);
       return;
     }
   }
@@ -314,8 +314,8 @@ function removeLastDailyLog(date, category) {
  * @returns {{ earned:number, spent:number, extras:number, total:number }}
  */
 function calcDayPoints(date) {
-  if (!data.dailyTasks || !data.dailyTasks[date]) return { earned: 0, spent: 0, extras: 0 };
-  var dd = data.dailyTasks[date];
+  if (!AppState.data.dailyTasks || !AppState.data.dailyTasks[date]) return { earned: 0, spent: 0, extras: 0 };
+  var dd = AppState.data.dailyTasks[date];
   var earned = 0, spent = 0;
   Object.keys(dd.tasks).forEach(function(k){
     var d = dd.tasks[k];
@@ -366,12 +366,12 @@ function renderDaily() {
     '<div class="metric"><div class="metric-label">当日获得</div><div class="metric-value green">+' + (earned + extras) + '</div></div>' +
     '<div class="metric"><div class="metric-label">当日扣分</div><div class="metric-value" style="color:var(--js-red)">' + spent + '</div></div>' +
     '<div class="metric"><div class="metric-label">当日净得</div><div class="metric-value ' + (earned + extras - spent > 0 ? 'gold' : '') + '">' + (earned + extras - spent > 0 ? '+' : '') + (earned + extras - spent) + '</div></div>' +
-    '<div class="metric"><div class="metric-label">行为积分余额</div><div class="metric-value gold">' + (data.dailyPoints || 0) + '</div></div>';
+    '<div class="metric"><div class="metric-label">行为积分余额</div><div class="metric-value gold">' + (AppState.data.dailyPoints || 0) + '</div></div>';
 
   // 任务卡片
   var taskList = document.getElementById('dailyTaskList');
   var html = '';
-  DAILY_TASKS.forEach(function(task){
+  AppState.DAILY_TASKS.forEach(function(task){
     var state = dayData.tasks[task.id];
     var done = state && state.done;
     var delta = state ? state.delta : 0;
@@ -414,7 +414,7 @@ function renderDaily() {
   // 未打卡提示
   var uncheckedCount = 0;
   var uncheckedNames = [];
-  DAILY_TASKS.forEach(function(task) {
+  AppState.DAILY_TASKS.forEach(function(task) {
     var state = dayData.tasks[task.id];
     if (!state || !state.done) {
       uncheckedCount++;
@@ -434,7 +434,7 @@ function renderDaily() {
   // 就寝打卡状态
   var bedtimeStatus = document.getElementById('bedtimeStatus');
   if (dayData.bedtime) {
-    var br = BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
+    var br = AppState.BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
     bedtimeStatus.innerHTML = '已记录：' + (br ? br.icon + ' ' + br.label + '（' + br.time + '）' : dayData.bedtime.key) +
       '　<button class="btn" style="padding:2px 8px;font-size:11px;margin-left:8px" onclick="bedtimeCancel()">取消</button>';
   } else {
@@ -442,7 +442,7 @@ function renderDaily() {
   }
 
   // 更新就寝按钮状态
-  BEDTIME_RULES.forEach(function(r){
+  AppState.BEDTIME_RULES.forEach(function(r){
     var btn = document.getElementById('btn-bed-' + r.key);
     if (btn) {
       var active = dayData.bedtime && dayData.bedtime.key === r.key;
@@ -474,10 +474,10 @@ function bedtimeCancel() {
   var dayData = getDayData(date);
   if (!dayData.bedtime) return;
   pushUndoSnapshot(data);
-  var prev = BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
+  var prev = AppState.BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
   if (prev) {
-    data.dailyPoints = (data.dailyPoints || 0) - prev.pts;
-    data.totalPoints = (data.dailyPoints || 0) + (data.advancedPoints || 0);
+    AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - prev.pts;
+    AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   }
   removeLastDailyLog(date, 'bedtime');
   dayData.bedtime = null;
@@ -491,8 +491,8 @@ function bedtimeCancel() {
  * 渲染日常打卡历史记录，桌面端表格 + 移动端卡片，显示日期-任务-积分明细
  */
 function renderDailyHistory() {
-  if (!data.dailyTasks) data.dailyTasks = {};
-  var dates = Object.keys(data.dailyTasks).sort(function(a,b){ return b.localeCompare(a); });
+  if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
+  var dates = Object.keys(AppState.data.dailyTasks).sort(function(a,b){ return b.localeCompare(a); });
   var tbody = document.getElementById('dailyHistoryTable');
   var mobCards = document.getElementById('dailyHistoryMobCards');
   if (!dates.length) {
@@ -505,7 +505,7 @@ function renderDailyHistory() {
   var html = '';
   var mobHtml = '';
   dates.forEach(function(date){
-    var dd = data.dailyTasks[date];
+    var dd = AppState.data.dailyTasks[date];
     var earned = 0, spent = 0;
     var taskCount = 0;
     Object.keys(dd.tasks).forEach(function(k){
@@ -547,10 +547,10 @@ function renderDailyHistory() {
  * @returns {{ score:number, tasksDone:number, bedtime:boolean, hasDeduction:boolean, maxPossible:number }}
  */
 function calcConcentrationIndex(date) {
-  if (!data.dailyTasks || !data.dailyTasks[date]) {
+  if (!AppState.data.dailyTasks || !AppState.data.dailyTasks[date]) {
     return { score: 0, tasksDone: 0, bedtime: false, hasDeduction: false, maxPossible: 100 };
   }
-  var dd = data.dailyTasks[date];
+  var dd = AppState.data.dailyTasks[date];
   var tasksDone = 0, hasDeduction = false;
   Object.keys(dd.tasks).forEach(function(k){
     var t = dd.tasks[k];
@@ -573,8 +573,8 @@ function calcConcentrationIndex(date) {
  * @returns {{ weekAvg:number, monthAvg:number, streakDays:number, weekCompletion:number, weekDays:number }}
  */
 function calcConcentrationStats() {
-  if (!data.dailyTasks) data.dailyTasks = {};
-  var dates = Object.keys(data.dailyTasks).sort();
+  if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
+  var dates = Object.keys(AppState.data.dailyTasks).sort();
   if (!dates.length) return { weekAvg: 0, monthAvg: 0, streakDays: 0, weekCompletion: 0, weekDays: 0 };
 
   var now = new Date();
@@ -629,10 +629,10 @@ function calcConcentrationStats() {
  * 专注力指数基于 C1 稳定专注力能力设计，适用于所有年级
  */
 function renderConcentration() {
-  if (!data.dailyTasks) data.dailyTasks = {};
+  if (!AppState.data.dailyTasks) AppState.data.dailyTasks = {};
 
   var stats = calcConcentrationStats();
-  var dates = Object.keys(data.dailyTasks).sort();
+  var dates = Object.keys(AppState.data.dailyTasks).sort();
 
   // 指标卡片：4项
   document.getElementById('concentrationMetrics').innerHTML =
@@ -760,3 +760,22 @@ function renderConcentrationChart(dateList) {
     }
   });
 }
+
+/* ===== 注册到 AppState 命名空间 ===== */
+AppState.switchDailySubTab = switchDailySubTab;
+AppState.getDayData = getDayData;
+AppState.taskCheck = taskCheck;
+AppState.taskDeduct = taskDeduct;
+AppState.bedtimeCheck = bedtimeCheck;
+AppState.addExtraTask = addExtraTask;
+AppState.removeExtraTask = removeExtraTask;
+AppState.addDailyPointsLog = addDailyPointsLog;
+AppState.removeLastDailyLog = removeLastDailyLog;
+AppState.calcDayPoints = calcDayPoints;
+AppState.renderDaily = renderDaily;
+AppState.bedtimeCancel = bedtimeCancel;
+AppState.renderDailyHistory = renderDailyHistory;
+AppState.calcConcentrationIndex = calcConcentrationIndex;
+AppState.calcConcentrationStats = calcConcentrationStats;
+AppState.renderConcentration = renderConcentration;
+AppState.renderConcentrationChart = renderConcentrationChart;
