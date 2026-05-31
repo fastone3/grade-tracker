@@ -87,11 +87,13 @@ function renderDashboard() {
   var rpDiv = document.getElementById('recentPoints');
   if (!recentLogs.length) { rpDiv.innerHTML = '<div class="empty">暂无积分记录</div>'; }
   else {
-    var html2 = '<table><thead><tr><th>时间</th><th>变动</th><th>来源</th><th>余额</th></tr></thead><tbody>';
+    var html2 = '<table style="width:100%;table-layout:fixed"><thead><tr><th style="width:25%">时间</th><th style="width:22%">变动</th><th style="width:28%">来源</th><th style="width:25%">余额</th></tr></thead><tbody>';
     recentLogs.forEach(function(l){
       var d = new Date(l.time);
+      var mm = ('0'+(d.getMonth()+1)).slice(-2);
+      var dd = ('0'+d.getDate()).slice(-2);
       var srcBadge = (l.pool||'daily')==='advanced'?'<span class="badge badge-gold">刷题</span>':'<span class="badge badge-blue">行为</span>';
-      html2 += '<tr><td style="font-size:12px;color:var(--js-text-secondary)">' + d.toLocaleDateString('zh-CN') + '</td><td><span class="pts-change '+(l.delta>0?'plus':'minus')+'">'+(l.delta>0?'+':'')+l.delta+'</span></td><td>'+srcBadge+'</td><td>'+l.balance+'</td></tr>';
+      html2 += '<tr><td style="font-size:12px;color:var(--js-text-secondary);white-space:nowrap">' + mm + '-' + dd + '</td><td><span class="pts-change '+(l.delta>0?'plus':'minus')+'">'+(l.delta>0?'+':'')+l.delta+'</span></td><td style="white-space:nowrap">'+srcBadge+'</td><td style="white-space:nowrap">'+l.balance+'</td></tr>';
     });
     rpDiv.innerHTML = html2 + '</tbody></table>';
   }
