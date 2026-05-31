@@ -139,9 +139,10 @@ AppState.MAX_UNDO_SIZE = 10;
  */
 function pushUndoSnapshot(data) {
   if (!data.undoStack) data.undoStack = [];
-  // 深克隆（排除 undoStack 本身，避免递归）
-  var snapshot = JSON.parse(JSON.stringify(data));
-  // 防止快照间互相引用 undoStack — 每个快照独立
+  // 深克隆：主动排除 undoStack，大幅减少序列化体积（避免 N 份快照来回复制）
+  var snapshot = JSON.parse(JSON.stringify(data, function(key, val) {
+    return key === 'undoStack' ? undefined : val;
+  }));
   data.undoStack.push(snapshot);
   // 超出上限 → 移除最早的快照
   if (data.undoStack.length > AppState.MAX_UNDO_SIZE) {

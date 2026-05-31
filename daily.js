@@ -4,6 +4,20 @@
  * 加载顺序：core.js → achievements.js → child-switch.js → daily.js → modules.js → grade.js → advanced.js → settings.js → main.js
  */
 
+/* ===== 操作锁 + 防抖成就检查（防止快速点击卡死） ===== */
+AppState._processingTask = false;
+var _achDebounceTimer = null;
+/**
+ * 防抖版成就检查：连续操作时只执行最后一次操作结束后 300ms
+ */
+function _debouncedCheckAchievements() {
+  if (_achDebounceTimer) clearTimeout(_achDebounceTimer);
+  _achDebounceTimer = setTimeout(function() {
+    _achDebounceTimer = null;
+    checkAchievements();
+  }, 300);
+}
+
 /* ===== 日常任务子标签切换 ===== */
 /**
  * 切换日常模块子面板（打卡/历史/专注力），更新 UI 并渲染对应面板
@@ -108,11 +122,13 @@ function getDayData(date) {
  * @param {number} taskId - DAILY_TASKS 中的任务 ID
  */
 function taskCheck(taskId) {
+  if (AppState._processingTask) return;
+  AppState._processingTask = true;
   var date = document.getElementById('daily-date').value;
-  if (!date) { showAlert('请先选择日期', 'error'); return; }
+  if (!date) { AppState._processingTask = false; showAlert('请先选择日期', 'error'); return; }
   var dayData = getDayData(date);
   var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
-  if (!task) return;
+  if (!task) { AppState._processingTask = false; return; }
 
   var alreadyDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
   pushUndoSnapshot(data);
@@ -142,7 +158,8 @@ function taskCheck(taskId) {
   }
   saveData(data);
   updateTaskCard(taskId);
-  checkAchievements();
+  _debouncedCheckAchievements();
+  AppState._processingTask = false;
 }
 
 /* ===== 任务扣分 ===== */
@@ -151,11 +168,13 @@ function taskCheck(taskId) {
  * @param {number} taskId - DAILY_TASKS 的任务 ID
  */
 function taskDeduct(taskId) {
+  if (AppState._processingTask) return;
+  AppState._processingTask = true;
   var date = document.getElementById('daily-date').value;
-  if (!date) { showAlert('请先选择日期', 'error'); return; }
+  if (!date) { AppState._processingTask = false; showAlert('请先选择日期', 'error'); return; }
   var dayData = getDayData(date);
   var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
-  if (!task || !task.minusTrigger) { showAlert('该项目不支持扣分', 'error'); return; }
+  if (!task || !task.minusTrigger) { AppState._processingTask = false; showAlert('该项目不支持扣分', 'error'); return; }
 
   pushUndoSnapshot(data);
   var wasDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
@@ -165,6 +184,7 @@ function taskDeduct(taskId) {
     removeLastDailyLog(date, 'task_' + taskId);
   }
   if (wasDone && dayData.tasks[taskId].delta < 0) {
+    AppState._processingTask = false;
     showAlert(task.name + ' 今日已扣分，不能重复扣！', 'error');
     return;
   }
@@ -176,6 +196,7 @@ function taskDeduct(taskId) {
   showAlert(task.icon + ' ' + task.minusTrigger + '！<strong>' + task.minusPts + '分</strong>');
   saveData(data);
   updateTaskCard(taskId);
+  AppState._processingTask = false;
 }
 
 /* ===== 就寝打卡 ===== */
