@@ -297,7 +297,6 @@ async function doSettleWeek() {
       cat5Green: st.cat5.green, cat5Red: st.cat5.red
     }
   };
-  pushUndoSnapshot(data);
   saveData(data);
   showAlert('本周进阶结算完成！' + (total !== 0 ? '<strong>' + (total > 0 ? '+' : '') + total + ' 分</strong>' : ''));
   renderAdvanced();
@@ -354,7 +353,6 @@ function checkAutoSettle() {
       cat5Green: st.cat5.green, cat5Red: st.cat5.red
     }
   };
-  pushUndoSnapshot(data);
   saveData(data);
   if (total !== 0) {
     showAlert('上周进阶自动结算完成：' + (total > 0 ? '+' : '') + total + ' 分');

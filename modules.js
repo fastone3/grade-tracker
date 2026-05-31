@@ -265,7 +265,6 @@ function addPoints() {
   AppState.data[srcKey] = (AppState.data[srcKey] || 0) + amount;
   AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'earn', pool: isAdv ? 'advanced' : 'daily', delta:amount, balance:AppState.data[srcKey], desc:note||('手动增加'+srcLabel) });
-  pushUndoSnapshot(data);
   saveData(data);
   document.getElementById('addAmount').value = '';
   document.getElementById('addNote').value = '';
@@ -289,7 +288,6 @@ function spendPoints() {
   AppState.data[srcKey] -= amount;
   AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   AppState.data.pointsLog.push({ id:Date.now().toString(), time:new Date().toISOString(), type:'spend', pool: isAdv ? 'advanced' : 'daily', delta:-amount, balance:AppState.data[srcKey], desc:note||('手动消费（'+srcLabel+'）') });
-  pushUndoSnapshot(data);
   saveData(data);
   document.getElementById('spendAmount').value = '';
   document.getElementById('spendNote').value = '';

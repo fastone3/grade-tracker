@@ -121,7 +121,6 @@ function refreshCurrentPanel() {
   else if (panelId === 'panel-advanced') renderAdvanced();
   else if (panelId === 'panel-achievements') renderAchievementList();
   else if (panelId === 'panel-settings') renderSettings();
-  updateUndoBtnState();
 }
 
 /**
@@ -304,21 +303,17 @@ function bindEventHandlers() {
   if (mc) mc.addEventListener('click', function(){ modalResolve(false); });
   var mo = document.getElementById('confirmOk');
   if (mo) mo.addEventListener('click', function(){ modalResolve(true); });
-
-  /* ---- 撤销操作 ---- */
-  var btnUndo = document.getElementById('btnUndo');
-  if (btnUndo) btnUndo.addEventListener('click', function(){ undoLastOperation(); });
 }
 
+/* ===== 主题切换 ===== */
 /**
- * 更新撤销按钮的启用/禁用状态
+ * 切换白天/夜间主题并持久化偏好
  */
-function updateUndoBtnState() {
-  var btn = document.getElementById('btnUndo');
-  if (!btn) return;
-  var hasUndo = AppState.data && AppState.data.undoStack && AppState.data.undoStack.length > 0;
-  btn.disabled = !hasUndo;
-  btn.title = hasUndo ? '撤销上一步操作' : '无操作可撤销';
+function toggleTheme() {
+  var isLight = document.body.classList.toggle('light-theme');
+  localStorage.setItem('grade_tracker_theme', isLight ? 'light' : 'dark');
+  var btn = document.getElementById('btnThemeToggle');
+  if (btn) btn.textContent = isLight ? '☀️' : '🌙';
 }
 
 
@@ -332,11 +327,20 @@ updateChildSwitcherLabels();
 // 初始化时根据年级显隐藏刷题模块
 updatePracticeVisibility();
 checkAutoSettle();
-checkUndoToast();
 renderDashboard();
 // 绑定事件（替代所有 inline onclick）
 bindEventHandlers();
-updateUndoBtnState();
+// 初始化主题（从 localStorage 恢复）
+(function() {
+  var saved = localStorage.getItem('grade_tracker_theme');
+  if (saved === 'light') {
+    document.body.classList.add('light-theme');
+    var btn = document.getElementById('btnThemeToggle');
+    if (btn) btn.textContent = '☀️';
+  }
+  var themeBtn = document.getElementById('btnThemeToggle');
+  if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+})();
 
 /* ===== 注册到 AppState 命名空间 ===== */
 AppState.switchTab = switchTab;
@@ -347,4 +351,3 @@ AppState.refreshCurrentPanel = refreshCurrentPanel;
 AppState.switchDailySubTabUI = switchDailySubTabUI;
 AppState.switchSubTabUI = switchSubTabUI;
 AppState.bindEventHandlers = bindEventHandlers;
-AppState.updateUndoBtnState = updateUndoBtnState;

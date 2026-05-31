@@ -131,7 +131,6 @@ function taskCheck(taskId) {
   if (!task) { AppState._processingTask = false; return; }
 
   var alreadyDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
-  pushUndoSnapshot(data);
   if (alreadyDone) {
     // 取消打卡
     var prevDelta = dayData.tasks[taskId].delta;
@@ -176,7 +175,6 @@ function taskDeduct(taskId) {
   var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
   if (!task || !task.minusTrigger) { AppState._processingTask = false; showAlert('该项目不支持扣分', 'error'); return; }
 
-  pushUndoSnapshot(data);
   var wasDone = dayData.tasks[taskId] && dayData.tasks[taskId].done;
   if (wasDone && dayData.tasks[taskId].delta > 0) {
     AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - dayData.tasks[taskId].delta;
@@ -211,7 +209,6 @@ function bedtimeCheck(key) {
   var rule = AppState.BEDTIME_RULES.find(function(r){ return r.key === key; });
   if (!rule) return;
 
-  pushUndoSnapshot(data);
   if (dayData.bedtime && dayData.bedtime.key === key) {
     // 取消
     AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - rule.pts;
@@ -249,7 +246,6 @@ function addExtraTask() {
   var pts = parseInt(document.getElementById('extra-task-pts').value);
   if (!desc || !pts || pts < 1) { showAlert('请填写加分说明和分值', 'error'); return; }
 
-  pushUndoSnapshot(data);
   var dayData = getDayData(date);
   var id = Date.now().toString();
   AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) + pts;
@@ -273,7 +269,6 @@ function removeExtraTask(date, extraId) {
   var dayData = getDayData(date);
   var extra = dayData.extras.find(function(e){ return e.id === extraId; });
   if (!extra) return;
-  pushUndoSnapshot(data);
   AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - extra.pts;
   AppState.data.totalPoints = (AppState.data.dailyPoints || 0) + (AppState.data.advancedPoints || 0);
   removeLastDailyLog(date, 'extra_' + extraId);
@@ -570,7 +565,6 @@ function bedtimeCancel() {
   if (!date) return;
   var dayData = getDayData(date);
   if (!dayData.bedtime) return;
-  pushUndoSnapshot(data);
   var prev = AppState.BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
   if (prev) {
     AppState.data.dailyPoints = (AppState.data.dailyPoints || 0) - prev.pts;
@@ -881,7 +875,6 @@ function readingCheckin() {
   var note = document.getElementById('readingNote').value.trim();
   if (!duration || duration < 1) { showAlert('请填写有效的阅读时长（分钟）', 'error'); return; }
 
-  pushUndoSnapshot(data);
   var dayData = getDayData(date);
   var prevReading = dayData.reading;
   dayData.reading = { duration: duration, note: note, ts: new Date().toISOString() };
@@ -899,7 +892,6 @@ function readingCancel() {
   if (!date) return;
   var dayData = getDayData(date);
   if (!dayData.reading) return;
-  pushUndoSnapshot(data);
   delete dayData.reading;
   saveData(data);
   showAlert('阅读打卡已取消');

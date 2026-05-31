@@ -80,7 +80,6 @@ function migrateData(data) {
     if (data.dailyPoints > 0) data.pointsLog.push({ id:'seed-daily', time:ts, type:'earn', pool:'daily', delta:data.dailyPoints, balance:data.dailyPoints, desc:'初始行为积分（系统导入）' });
     if (data.advancedPoints > 0) data.pointsLog.push({ id:'seed-adv', time:ts, type:'earn', pool:'advanced', delta:data.advancedPoints, balance:data.advancedPoints, desc:'初始刷题积分（系统导入）' });
   }
-  data.undoStack = data.undoStack || [];
   if (data.dailyPoints !== undefined && data.advancedPoints !== undefined) return data;
   var dailyPts = 0, advancedPts = 0;
   if (data.pointsLog && data.pointsLog.length > 0) {
@@ -120,7 +119,7 @@ function inferPool(log) {
  * @returns {object} 带初始值的空数据对象
  */
 function getDefaultData() {
-  return { records:[], pointsLog:[], dailyPoints:0, advancedPoints:0, totalPoints:0, rules:{base:20,top3:30,streakBase:10}, consecutiveTop3:0, dailyTasks:{}, weeklySettlements:{}, achievements:{unlocked:[]}, undoStack:[] };
+  return { records:[], pointsLog:[], dailyPoints:0, advancedPoints:0, totalPoints:0, rules:{base:20,top3:30,streakBase:10}, consecutiveTop3:0, dailyTasks:{}, weeklySettlements:{}, achievements:{unlocked:[]} };
 }
 
 /**
@@ -128,66 +127,6 @@ function getDefaultData() {
  * @param {object} d - 完整数据对象
  */
 function saveData(d) { localStorage.setItem(getStorageKey(AppState.currentChild), JSON.stringify(d)); }
-
-/* ===== 撤销操作 ===== */
-AppState.MAX_UNDO_SIZE = 10;
-
-/**
- * 在当前数据变更前保存快照（push 到 undoStack）
- * 必须在每次数据变更前调用，捕获变更前的完整状态
- * @param {object} data - 当前数据对象（会被修改：undoStack 追加快照）
- */
-function pushUndoSnapshot(data) {
-  if (!data.undoStack) data.undoStack = [];
-  // 深克隆：主动排除 undoStack，大幅减少序列化体积（避免 N 份快照来回复制）
-  var snapshot = JSON.parse(JSON.stringify(data, function(key, val) {
-    return key === 'undoStack' ? undefined : val;
-  }));
-  data.undoStack.push(snapshot);
-  // 超出上限 → 移除最早的快照
-  if (data.undoStack.length > AppState.MAX_UNDO_SIZE) {
-    data.undoStack.shift();
-  }
-}
-
-/**
- * 撤销上一步操作：从恢复最近一次操作前的完整数据快照
- * 使用 location.reload() 确保所有模块的 data 引用同步
- */
-function undoLastOperation() {
-  var childKey = getStorageKey(AppState.currentChild);
-  var raw;
-  try { raw = JSON.parse(localStorage.getItem(childKey)); }
-  catch(e) { showAlert('数据异常，无法撤销', 'error'); return; }
-  if (!raw || !raw.undoStack || raw.undoStack.length === 0) {
-    showAlert('没有可撤销的操作', 'error');
-    return;
-  }
-  // 弹出最近一次快照
-  var snapshot = raw.undoStack.pop();
-  // 携带剩余 undoStack 到恢复的数据中
-  snapshot.undoStack = raw.undoStack;
-  // 写回 localStorage
-  localStorage.setItem(childKey, JSON.stringify(snapshot));
-  // 设置 reload 后显示提示
-  localStorage.setItem('_undo_toast_' + AppState.currentChild, '已撤销上一步操作 ⏪');
-  // 刷新页面确保所有模块变量同步
-  location.reload();
-}
-
-/**
- * 检查撤销 Toast 标志：页面 reload 后读取 _undo_toast_ 标志显示 Toast
- * 在页面初始化阶段调用
- */
-function checkUndoToast() {
-  var key = '_undo_toast_' + AppState.currentChild;
-  var msg = localStorage.getItem(key);
-  if (msg) {
-    localStorage.removeItem(key);
-    // 延迟显示，确保 DOM 就绪
-    setTimeout(function() { showAlert(msg, 'success'); }, 100);
-  }
-}
 
 /* ===== Chart.js 深色主题全局配置 ===== */
 Chart.defaults.color = 'rgba(160,180,210,0.82)';
@@ -289,9 +228,6 @@ AppState.migrateData = migrateData;
 AppState.inferPool = inferPool;
 AppState.getDefaultData = getDefaultData;
 AppState.saveData = saveData;
-AppState.pushUndoSnapshot = pushUndoSnapshot;
-AppState.undoLastOperation = undoLastOperation;
-AppState.checkUndoToast = checkUndoToast;
 AppState.showAlert = showAlert;
 AppState.switchSubTab = switchSubTab;
 AppState.fmtLocalDate = fmtLocalDate;
