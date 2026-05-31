@@ -51,7 +51,7 @@ function renderDashboard() {
   if (!poolALogs.length) {
     poolADiv.innerHTML = '<div class="empty">暂无行为积分动态</div>';
   } else {
-    var htmlA = '<table style="width:100%;font-size:12px;table-layout:fixed"><thead><tr><th style="width:28%">时间</th><th style="width:18%">变动</th><th style="width:54%">说明</th></tr></thead><tbody>';
+    var htmlA = '<table style="width:100%;font-size:12px;table-layout:fixed;min-width:unset"><thead><tr><th style="width:28%">时间</th><th style="width:18%">变动</th><th style="width:54%">说明</th></tr></thead><tbody>';
     poolALogs.forEach(function(l){
       var d = new Date(l.time);
       var mm = ('0'+(d.getMonth()+1)).slice(-2);
@@ -87,7 +87,7 @@ function renderDashboard() {
   var rpDiv = document.getElementById('recentPoints');
   if (!recentLogs.length) { rpDiv.innerHTML = '<div class="empty">暂无积分记录</div>'; }
   else {
-    var html2 = '<table style="width:100%;table-layout:fixed"><thead><tr><th style="width:25%">时间</th><th style="width:22%">变动</th><th style="width:28%">来源</th><th style="width:25%">余额</th></tr></thead><tbody>';
+    var html2 = '<table style="width:100%;table-layout:fixed;min-width:unset"><thead><tr><th style="width:25%">时间</th><th style="width:22%">变动</th><th style="width:28%">来源</th><th style="width:25%">余额</th></tr></thead><tbody>';
     recentLogs.forEach(function(l){
       var d = new Date(l.time);
       var mm = ('0'+(d.getMonth()+1)).slice(-2);
