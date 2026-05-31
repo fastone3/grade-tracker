@@ -141,7 +141,7 @@ function taskCheck(taskId) {
     showAlert(task.icon + ' ' + task.name + ' 已完成！<strong>+' + task.plusPts + '分</strong>');
   }
   saveData(data);
-  renderDaily();
+  updateTaskCard(taskId);
   checkAchievements();
 }
 
@@ -175,7 +175,7 @@ function taskDeduct(taskId) {
   addDailyPointsLog(date, 'spend', task.minusPts, task.icon + ' ' + task.minusTrigger, 'task_' + taskId);
   showAlert(task.icon + ' ' + task.minusTrigger + '！<strong>' + task.minusPts + '分</strong>');
   saveData(data);
-  renderDaily();
+  updateTaskCard(taskId);
 }
 
 /* ===== 就寝打卡 ===== */
@@ -330,6 +330,116 @@ function calcDayPoints(date) {
   return { earned: earned, spent: spent, extras: extras, total: earned - spent + extras };
 }
 
+/* ===== 单张任务卡片 HTML（全量+增量复用） ===== */
+/**
+ * 生成单张日常任务卡片的 HTML 字符串，不含外层包裹 div
+ * @param {object} task - DAILY_TASKS 中的任务对象
+ * @param {object} dayData - 当日数据
+ * @returns {string}
+ */
+function renderTaskCardHTML(task, dayData) {
+  var state = dayData.tasks[task.id];
+  var done = state && state.done;
+  var delta = state ? state.delta : 0;
+  var canMinus = task.minusPts < 0;
+
+  var cardBg = done ? (delta > 0 ? 'var(--task-done-bg)' : 'var(--task-fail-bg)') : 'var(--task-todo-bg)';
+  var cardBorder = done ? (delta > 0 ? 'var(--task-done-border)' : 'var(--task-fail-border)') : 'var(--task-todo-border)';
+  var stateLabel = done ? (delta > 0 ? '<span class="badge badge-green">+'+delta+'分</span>' : '<span class="badge badge-red">'+delta+'分</span>') : '<span class="badge badge-gray">未打卡</span>';
+  var checkBtnClass = done && delta > 0 ? 'btn btn-primary' : 'btn';
+  var minusBtnClass = done && delta < 0 ? 'btn btn-danger' : 'btn';
+  var checkDisabled = done && delta > 0 ? 'style="opacity:0.5"' : '';
+  var minusDisabled = (done && delta < 0) || !canMinus ? 'style="opacity:0.35;cursor:not-allowed"' : '';
+  var taskStateClass = done ? (delta > 0 ? ' task-done' : ' task-fail') : '';
+
+  var html = '<div class="card' + taskStateClass + '" style="margin-top:8px;background:'+cardBg+';border:1px solid '+cardBorder+'">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:6px">' +
+      '<div>' +
+        '<span style="font-size:16px;margin-right:6px">'+task.icon+'</span>' +
+        '<strong style="font-size:14px">'+task.name+'</strong>' +
+        '<div style="font-size:11px;color:var(--js-text-secondary);margin-top:2px">'+task.desc+'</div>' +
+        (canMinus ? '<div style="font-size:11px;color:var(--js-red);margin-top:2px">扣分条件：'+task.minusTrigger+'</div>' : '') +
+        '<div style="font-size:11px;color:var(--js-cyan);margin-top:2px">加分 +'+task.plusPts+'分</div>' +
+      '</div>' +
+      '<div style="text-align:right">'+stateLabel+'</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+      '<button class="'+checkBtnClass+'" '+checkDisabled+' onclick="taskCheck('+task.id+')" style="flex:1;min-width:80px;font-size:13px;padding:7px">' +
+        (done && delta > 0 ? '✅ 已完成' : '✅ 打卡 +'+task.plusPts+'分') +
+      '</button>';
+  if (canMinus) {
+    html += '<button class="'+minusBtnClass+'" '+minusDisabled+' onclick="taskDeduct('+task.id+')" style="flex:1;min-width:80px;font-size:13px;padding:7px">' +
+      (done && delta < 0 ? '❌ 已扣分' : '❌ 扣分 '+task.minusPts+'分') +
+    '</button>';
+  }
+  html += '</div></div>';
+  return html;
+}
+
+/**
+ * 打卡后增量更新：仅更新一张任务卡片 DOM + 指标统计 + 提醒 + 就寝状态
+ * @param {number} taskId - 已打卡的任务 ID
+ */
+function updateTaskCard(taskId) {
+  var date = document.getElementById('daily-date').value;
+  if (!date) return;
+  var dayData = getDayData(date);
+  var task = AppState.DAILY_TASKS.find(function(t){ return t.id === taskId; });
+  if (!task) return;
+
+  // 替换单张卡片 DOM（outerHTML 替换包含 id 的外层 div）
+  var wrapper = document.getElementById('task-card-' + taskId);
+  if (wrapper) {
+    wrapper.outerHTML = '<div id="task-card-' + taskId + '">' + renderTaskCardHTML(task, dayData) + '</div>';
+  }
+
+  // 更新积分统计
+  var ptsInfo = calcDayPoints(date);
+  document.getElementById('dailyMetrics').innerHTML =
+    '<div class="metric"><div class="metric-label">当日获得</div><div class="metric-value green">+' + (ptsInfo.earned + ptsInfo.extras) + '</div></div>' +
+    '<div class="metric"><div class="metric-label">当日扣分</div><div class="metric-value" style="color:var(--js-red)">' + Math.abs(ptsInfo.spent) + '</div></div>' +
+    '<div class="metric"><div class="metric-label">当日净得</div><div class="metric-value ' + (ptsInfo.total > 0 ? 'gold' : '') + '">' + (ptsInfo.total > 0 ? '+' : '') + ptsInfo.total + '</div></div>' +
+    '<div class="metric"><div class="metric-label">行为积分余额</div><div class="metric-value gold">' + (AppState.data.dailyPoints || 0) + '</div></div>';
+
+  // 更新未打卡提醒
+  var uncheckedCount = 0;
+  var uncheckedNames = [];
+  AppState.DAILY_TASKS.forEach(function(task) {
+    var st = dayData.tasks[task.id];
+    if (!st || !st.done) {
+      uncheckedCount++;
+      uncheckedNames.push(task.icon + ' ' + task.name);
+    }
+  });
+  var reminderDiv = document.getElementById('dailyCheckinReminder');
+  if (uncheckedCount > 0) {
+    reminderDiv.classList.remove('hidden');
+    reminderDiv.innerHTML = '<div class="text-sm" style="color:var(--js-yellow);line-height:1.6">' +
+      '⚠️ <strong>还有 ' + uncheckedCount + ' 项未打卡</strong>，记得完成所有项目哦！<br>' +
+      '<span class="text-xs text-secondary">' + uncheckedNames.join('　|　') + '</span></div>';
+  } else {
+    reminderDiv.classList.add('hidden');
+  }
+
+  // 更新就寝状态（状态可能没变但简单更新保同步）
+  var bedtimeStatus = document.getElementById('bedtimeStatus');
+  if (dayData.bedtime) {
+    var br = AppState.BEDTIME_RULES.find(function(r){ return r.key === dayData.bedtime.key; });
+    bedtimeStatus.innerHTML = '已记录：' + (br ? br.icon + ' ' + br.label + '（' + br.time + '）' : dayData.bedtime.key) +
+      '　<button class="btn" style="padding:2px 8px;font-size:11px;margin-left:8px" onclick="bedtimeCancel()">取消</button>';
+  } else {
+    bedtimeStatus.innerHTML = '今日还未记录就寝时间，请点击下方按钮打卡';
+  }
+  AppState.BEDTIME_RULES.forEach(function(r){
+    var btn = document.getElementById('btn-bed-' + r.key);
+    if (btn) {
+      var active = dayData.bedtime && dayData.bedtime.key === r.key;
+      btn.style.fontWeight = active ? '600' : '400';
+      btn.style.boxShadow = active ? '0 0 0 2px ' + (r.key === 'chat' ? 'var(--js-cyan)' : r.key === 'quiet' ? 'var(--js-green)' : 'var(--js-yellow)') : 'none';
+    }
+  });
+}
+
 /* ===== 渲染：日常打卡 ===== */
 /**
  * 渲染日常打卡面板（任务列表、就寝打卡、附加任务、当日积分统计）
@@ -369,46 +479,11 @@ function renderDaily() {
     '<div class="metric"><div class="metric-label">当日净得</div><div class="metric-value ' + (earned + extras - spent > 0 ? 'gold' : '') + '">' + (earned + extras - spent > 0 ? '+' : '') + (earned + extras - spent) + '</div></div>' +
     '<div class="metric"><div class="metric-label">行为积分余额</div><div class="metric-value gold">' + (AppState.data.dailyPoints || 0) + '</div></div>';
 
-  // 任务卡片
+  // 任务卡片（用 function 生成单张卡片 HTML，供全量/增量复用）
   var taskList = document.getElementById('dailyTaskList');
   var html = '';
   AppState.DAILY_TASKS.forEach(function(task){
-    var state = dayData.tasks[task.id];
-    var done = state && state.done;
-    var delta = state ? state.delta : 0;
-    var canMinus = task.minusPts < 0;
-
-    // 状态颜色
-    var cardBg = done ? (delta > 0 ? 'var(--task-done-bg)' : 'var(--task-fail-bg)') : 'var(--task-todo-bg)';
-    var cardBorder = done ? (delta > 0 ? 'var(--task-done-border)' : 'var(--task-fail-border)') : 'var(--task-todo-border)';
-    var stateLabel = done ? (delta > 0 ? '<span class="badge badge-green">+'+delta+'分</span>' : '<span class="badge badge-red">'+delta+'分</span>') : '<span class="badge badge-gray">未打卡</span>';
-    var checkBtnClass = done && delta > 0 ? 'btn btn-primary' : 'btn';
-    var minusBtnClass = done && delta < 0 ? 'btn btn-danger' : 'btn';
-    var checkDisabled = done && delta > 0 ? 'style="opacity:0.5"' : '';
-    var minusDisabled = (done && delta < 0) || !canMinus ? 'style="opacity:0.35;cursor:not-allowed"' : '';
-
-    var taskStateClass = done ? (delta > 0 ? ' task-done' : ' task-fail') : '';
-    html += '<div class="card' + taskStateClass + '" style="margin-top:8px;background:'+cardBg+';border:1px solid '+cardBorder+'">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;flex-wrap:wrap;gap:6px">' +
-        '<div>' +
-          '<span style="font-size:16px;margin-right:6px">'+task.icon+'</span>' +
-          '<strong style="font-size:14px">'+task.name+'</strong>' +
-          '<div style="font-size:11px;color:var(--js-text-secondary);margin-top:2px">'+task.desc+'</div>' +
-          (canMinus ? '<div style="font-size:11px;color:var(--js-red);margin-top:2px">扣分条件：'+task.minusTrigger+'</div>' : '') +
-          '<div style="font-size:11px;color:var(--js-cyan);margin-top:2px">加分 +'+task.plusPts+'分</div>' +
-        '</div>' +
-        '<div style="text-align:right">'+stateLabel+'</div>' +
-      '</div>' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
-        '<button class="'+checkBtnClass+'" '+checkDisabled+' onclick="taskCheck('+task.id+')" style="flex:1;min-width:80px;font-size:13px;padding:7px">' +
-          (done && delta > 0 ? '✅ 已完成' : '✅ 打卡 +'+task.plusPts+'分') +
-        '</button>';
-    if (canMinus) {
-      html += '<button class="'+minusBtnClass+'" '+minusDisabled+' onclick="taskDeduct('+task.id+')" style="flex:1;min-width:80px;font-size:13px;padding:7px">' +
-        (done && delta < 0 ? '❌ 已扣分' : '❌ 扣分 '+task.minusPts+'分') +
-      '</button>';
-    }
-    html += '</div></div>';
+    html += '<div id="task-card-' + task.id + '">' + renderTaskCardHTML(task, dayData) + '</div>';
   });
   taskList.innerHTML = html;
 
